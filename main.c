@@ -16,9 +16,9 @@ long int score, highScore;
 int lives;
 int prices[7] = {70, 25, 40, 25, 10, 10, 50};
 int item[9] = {0}, totalPerItem[7] = {0};
-const char itemNames[9][101] = {"x  Burger", "x  Chicken Ball", "x  Double Coffee", "x  Lemonade", "x  Samosa", "x  Chaa", "x  Sandwich", "x  Bombs", "x  Joshims hurt"};
+const char itemNames[9][101] = {"x Burger", "x Chicken Ball", "x Double Coffee", "x Lemonade", "x Samosa", "x Chaa", "x Sandwich", "x Bombs", "x Joshims hurt"};
 
-// struct galore
+// game structs
 typedef struct
 {
     float x, y, dy, dx;
@@ -52,7 +52,7 @@ typedef struct
 
     TTF_Font *font;
 
-    Mix_Music *menuMusic, *gameMusic;
+    Mix_Music *menuMusic, *gameMusic, *minigameMusic;
     Mix_Chunk *soundBytes[5];
 
     SDL_Surface *scoreSurface, *livesSurface, *textSurface, *highScoreSurface;
@@ -98,10 +98,46 @@ typedef struct
 
 } GameTextures;
 
+// minigame structs
+typedef struct
+{
+    float a, b, yspeed, xspeed;
+    int w, h, frame;
+    bool right;
+
+} Mincat;
+
+typedef struct
+{
+    float c, d;
+    int w, h, move, size;
+
+} MinPlatform;
+
+typedef struct
+{
+    int ee[42], ff[42];
+    int j;
+    int targw, targh, targnum;
+
+} MinTarget;
+
+typedef struct
+{
+    Mincat mincat;
+    MinPlatform minplat;
+    MinTarget tar;
+    SDL_Texture *cat[2], *plat, *targ, *back, *panjim, *heart;
+    int time;
+
+} MinGameObjects;
+
+// pages
 typedef enum
 {
     PAGE_STATUS_MENU,
     PAGE_STATUS_GAME,
+    PAGE_STATUS_MINIGAME,
     PAGE_STATUS_OVER,
     PAGE_STATUS_MANUAL
 } PageStatus;
@@ -213,7 +249,7 @@ void manJump(GameObjects *object)
             {
                 Mix_PlayChannel(-1, object->soundBytes[3], 0);
                 object->man.dy = 2.5;
-                object->man.y = HEIGHT - object->man.h - 185;
+                object->man.y = HEIGHT - object->man.h - 200;
                 object->man.up = true;
             }
         }
@@ -351,6 +387,7 @@ void loadMusic(GameObjects *object)
 {
     object->menuMusic = Mix_LoadMUS("Undertale OST - Hotel.mp3");
     object->gameMusic = Mix_LoadMUS("Undertale OST - Can You Really Call This A Hotel I Didn't Receive A Mint On My Pillow.mp3");
+    object->minigameMusic = Mix_LoadMUS("Undertale OST - Ghost Fight.mp3");
 
     object->soundBytes[0] = Mix_LoadWAV("eatSound.wav");
     object->soundBytes[1] = Mix_LoadWAV("joshimSound.wav");
@@ -363,6 +400,7 @@ void destroyMusic(GameObjects *object)
 {
     Mix_FreeMusic(object->gameMusic);
     Mix_FreeMusic(object->menuMusic);
+    Mix_FreeMusic(object->minigameMusic);
     for (int i = 0; i < 5; i++)
     {
         Mix_FreeChunk(object->soundBytes[i]);
@@ -1124,6 +1162,283 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     SDL_RenderPresent(renderer);
 }
 
+// minigame
+void minigameInitialize(SDL_Renderer *renderer, MinGameObjects *game)
+{
+    game->time = 0;
+
+    int xposition;
+    srand(time(0));
+    xposition = rand() % (630 + 1 - 10) + 10;
+
+    game->minplat.w = 200;
+    game->minplat.h = 40;
+    game->minplat.c = xposition;
+    game->minplat.d = HEIGHT - game->minplat.h;
+    game->minplat.move = 5;
+    game->minplat.size = 15; // size decrease after collision
+
+    game->mincat.w = 100;
+    game->mincat.h = 80;
+    game->mincat.a = xposition;
+    game->mincat.b = game->minplat.d - game->mincat.h;
+    game->mincat.yspeed = 2.5;
+    game->mincat.xspeed = 1.5;
+    game->mincat.right = true;
+    game->mincat.frame = 1;
+
+    game->tar.ee[0] = 10;
+    game->tar.ff[0] = 10;
+    game->tar.targw = 100;
+    game->tar.targh = 55;
+    game->tar.targnum = 35;
+
+    for (int i = 1; i < game->tar.targnum; i++)
+    {
+        if (game->tar.ee[i - 1] == (WIDTH - game->tar.targw - 10)) // 10 na dile ekdom 0,0 theke start hobe
+        {
+            game->tar.ff[i] = game->tar.ff[i - 1] + game->tar.targh;
+            game->tar.ee[i] = 10;
+        }
+        else
+        {
+            game->tar.ee[i] = game->tar.ee[i - 1] + game->tar.targw;
+            game->tar.ff[i] = game->tar.ff[i - 1] + 0;
+        }
+    }
+    srand(time(0));
+    game->tar.j = rand() % ((game->tar.targnum - 1) + 1 - 0) + 0;
+}
+
+void minigameProcess(MinGameObjects *game, GameObjects *object)
+{
+    game->time++;
+
+    game->mincat.b -= game->mincat.yspeed;
+    game->mincat.a += game->mincat.xspeed;
+
+    // movement controls
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    if ((state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) && game->minplat.c >= 0)
+    {
+        game->minplat.c -= game->minplat.move;
+    }
+    else if ((state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) && game->minplat.c <= WIDTH - game->minplat.w)
+    {
+        game->minplat.c += game->minplat.move;
+    }
+    else
+    {
+        // frames
+        if (game->time % 35 == 0)
+        {
+            if (game->mincat.frame == 0)
+                game->mincat.frame = 1;
+            else
+                game->mincat.frame = 0;
+        }
+    }
+
+    // facing right
+    if (game->mincat.xspeed > 0)
+        game->mincat.right = true;
+    else
+        game->mincat.right = false;
+
+    // bounce back
+    // left
+    if (game->mincat.a <= 0)
+    {
+        game->mincat.xspeed = -game->mincat.xspeed;
+    }
+    // right
+    if (game->mincat.a >= (WIDTH - game->mincat.w))
+    {
+        game->mincat.xspeed = -game->mincat.xspeed;
+    }
+    // up
+    if (game->mincat.b <= 0)
+    {
+        game->mincat.yspeed = -game->mincat.yspeed;
+    }
+
+    // bottom screen collision
+    if (game->mincat.b >= (HEIGHT - game->mincat.h))
+    {
+        game->mincat.xspeed = 0;
+        game->mincat.yspeed = 0;
+        game->mincat.frame = 1;
+
+        score -= 69;
+        item[8]++;
+        printf("YOU HURT JOSHIM! -69tk!\n");
+
+        Mix_HaltMusic();
+        Mix_PlayChannel(-1, object->soundBytes[1], 0);
+        SDL_Delay(750);
+        Mix_PlayMusic(object->gameMusic, -1);
+        page = PAGE_STATUS_GAME;
+        // printf("MAIN GAME\n");
+        //  SDL_Quit();
+    }
+
+    // platform collision
+    if (game->mincat.b == (game->minplat.d - game->mincat.h) && game->mincat.a >= (game->minplat.c - game->mincat.w) && game->mincat.a <= (game->minplat.c + game->minplat.w))
+    {
+        Mix_PlayChannel(-1, object->soundBytes[3], 0);
+        game->mincat.yspeed = -game->mincat.yspeed;
+        game->minplat.w -= game->minplat.size;
+    }
+
+    // block collisions
+    for (int i = 0; i < game->tar.targnum; i++)
+    {
+        int k = game->tar.j;
+
+        if (game->mincat.a <= (game->tar.ee[i] + game->tar.targw) && game->tar.ee[i] <= (game->mincat.a + game->mincat.w) && game->mincat.b <= (game->tar.ff[i] + game->tar.targh) && game->tar.ff[i] <= (game->mincat.b + game->mincat.h))
+        {
+            game->mincat.xspeed = -game->mincat.xspeed;
+            game->mincat.yspeed = -game->mincat.yspeed;
+            game->tar.ee[i] = 569;
+            game->tar.ff[i] = 769;
+        }
+        else if (game->mincat.a <= (game->tar.ee[k] + game->tar.targw) && game->tar.ee[k] <= (game->mincat.a + game->mincat.w) && game->mincat.b <= (game->tar.ff[k] + game->tar.targh) && game->tar.ff[k] <= (game->mincat.b + game->mincat.h))
+        {
+            game->tar.ee[k] = 569;
+            game->tar.ff[k] = 769;
+            game->mincat.xspeed = 0;
+            game->mincat.yspeed = 0;
+
+            Mix_HaltMusic();
+            Mix_PlayChannel(-1, object->soundBytes[0], 0);
+            SDL_Delay(750);
+
+            if (k % 2)
+            {
+                score += 150;
+                printf("BONUS! +150tk\n");
+                // printf("\nUIII");
+            }
+            else
+            {
+                if (lives < 3)
+                    lives++;
+                printf("BONUS! +1 LIFE\n");
+                // printf("\nyee");
+            }
+
+            Mix_PlayMusic(object->gameMusic, -1);
+            page = PAGE_STATUS_GAME;
+        }
+    }
+}
+
+void renderMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
+{
+    SDL_SetRenderDrawColor(renderer, 243, 207, 198, 0);
+
+    SDL_RenderClear(renderer);
+
+    SDL_Rect rectBack = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, game->back, NULL, &rectBack);
+
+    SDL_Rect rectCat = {game->mincat.a, game->mincat.b, game->mincat.w, game->mincat.h};
+    SDL_RenderCopyEx(renderer, game->cat[game->mincat.frame], NULL, &rectCat, 0, NULL, game->mincat.right);
+
+    SDL_Rect rectPlat = {game->minplat.c, game->minplat.d, game->minplat.w, game->minplat.h};
+    SDL_RenderCopy(renderer, game->plat, NULL, &rectPlat);
+
+    for (int i = 0; i < game->tar.targnum; i++)
+    {
+        int k = game->tar.j;
+        if (i == k && k % 2)
+        {
+            SDL_Rect rectpanjim = {game->tar.ee[i], game->tar.ff[i], game->tar.targw, game->tar.targh};
+            SDL_RenderCopy(renderer, game->panjim, NULL, &rectpanjim);
+            continue;
+        }
+        else if (i == k && !(k % 2))
+        {
+            SDL_Rect rectheart = {game->tar.ee[i], game->tar.ff[k], game->tar.targw, game->tar.targh};
+            SDL_RenderCopy(renderer, game->heart, NULL, &rectheart);
+            continue;
+        }
+        else
+        {
+            SDL_Rect recttar = {game->tar.ee[i], game->tar.ff[i], game->tar.targw, game->tar.targh};
+            SDL_RenderCopy(renderer, game->targ, NULL, &recttar);
+        }
+    }
+
+    SDL_RenderPresent(renderer);
+}
+
+void loadMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
+{
+    SDL_Surface *catSurface1 = IMG_Load("joshim3.png");
+    if (catSurface1 == NULL)
+    {
+        printf("Error: joshim3.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->cat[0] = SDL_CreateTextureFromSurface(renderer, catSurface1);
+    SDL_FreeSurface(catSurface1);
+
+    SDL_Surface *catSurface2 = IMG_Load("joshim4.png");
+    if (catSurface2 == NULL)
+    {
+        printf("Error: joshim4.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->cat[1] = SDL_CreateTextureFromSurface(renderer, catSurface2);
+    SDL_FreeSurface(catSurface2);
+
+    SDL_Surface *platSurface = NULL;
+    SDL_Surface *targSurface = NULL;
+    SDL_Surface *backSurface = NULL;
+    SDL_Surface *panjimSurface = NULL;
+    SDL_Surface *heartSurface = NULL;
+
+    heartSurface = IMG_Load("heart.png");
+
+    platSurface = IMG_Load("plat.png");
+    targSurface = IMG_Load("targ.png");
+    backSurface = IMG_Load("backgr.png");
+    panjimSurface = IMG_Load("meal.png");
+
+    game->plat = SDL_CreateTextureFromSurface(renderer, platSurface);
+    game->targ = SDL_CreateTextureFromSurface(renderer, targSurface);
+    game->back = SDL_CreateTextureFromSurface(renderer, backSurface);
+    game->panjim = SDL_CreateTextureFromSurface(renderer, panjimSurface);
+    game->heart = SDL_CreateTextureFromSurface(renderer, heartSurface);
+
+    SDL_FreeSurface(heartSurface);
+    SDL_FreeSurface(panjimSurface);
+    SDL_FreeSurface(backSurface);
+    SDL_FreeSurface(targSurface);
+
+    SDL_FreeSurface(platSurface);
+}
+
+void destroyMinigameTextures(MinGameObjects *game)
+{
+    SDL_DestroyTexture(game->cat[0]);
+    SDL_DestroyTexture(game->cat[1]);
+    SDL_DestroyTexture(game->panjim);
+    SDL_DestroyTexture(game->targ);
+    SDL_DestroyTexture(game->plat);
+    SDL_DestroyTexture(game->back);
+    SDL_DestroyTexture(game->heart);
+}
+
+void playMinigame(SDL_Renderer *renderer, MinGameObjects *game, GameObjects *object)
+{
+    renderMinigameSurface(renderer, game);
+    minigameProcess(game, object);
+}
+
 // game
 bool quitCheck(SDL_Event *event)
 {
@@ -1143,7 +1458,7 @@ bool quitCheck(SDL_Event *event)
     return false;
 }
 
-void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer, FILE *file)
+void playGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniObject, SDL_Renderer *renderer, FILE *file)
 {
     renderGame(object, texture, renderer);
 
@@ -1165,6 +1480,7 @@ void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer
             fprintf(file, "%ld", highScore);
         }
 
+        printf("GAME OVER! SCORE: %d\n", score);
         printf("HIGHSCORE: %ld\n", highScore);
 
         page = PAGE_STATUS_OVER;
@@ -1172,7 +1488,7 @@ void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer
 
     // joshim
     int c = (rand() % 2);
-    if (!(object->time % 1100))
+    if (!(object->time % 1750))
     {
         if (c == 1)
             joshimLeft(object);
@@ -1186,16 +1502,20 @@ void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer
         if (joshimCollision(object, object))
         {
             Mix_PlayChannel(-1, object->soundBytes[1], 0);
-            item[8]++;
-            score -= 69;
-            printf("YOU HURT JOSHIM! -69!\nSCORE: %d\n", score);
-            // SDL_Delay(250);
             loadJoshim(object);
+
+            SDL_Delay(750);
+
+            // minigame
+            Mix_HaltMusic();
+            Mix_PlayMusic(object->minigameMusic, -1);
+            minigameInitialize(renderer, miniObject);
+            page = PAGE_STATUS_MINIGAME;
         }
     }
 
     int r = (rand() % 8);
-    if (!(object->time % 7) && (object->food[r].y >= HEIGHT || object->food[r].y < -(object->food[r].h)))
+    if (!(object->time % 5) && (object->food[r].y >= HEIGHT || object->food[r].y < -(object->food[r].h)))
     {
         dropFood(object, r);
     }
@@ -1214,7 +1534,7 @@ void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer
             {
                 Mix_PlayChannel(-1, object->soundBytes[0], 0);
                 score += prices[i];
-                printf("SCORE: %d\n", score);
+                printf("1 %-15s    tk %d\n", itemNames[i], prices[i]);
             }
             item[i]++;
             loadFood(object, i);
@@ -1222,7 +1542,7 @@ void playGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer
     }
 }
 
-void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, SDL_Renderer *renderer, SDL_Event *event, FILE *file)
+void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, MinGameObjects *miniObject, SDL_Renderer *renderer, SDL_Event *event, FILE *file)
 {
     switch (page)
     {
@@ -1230,7 +1550,10 @@ void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, SDL
         renderMenu(object, texture, renderer);
         break;
     case PAGE_STATUS_GAME:
-        playGame(object, texture, renderer, file);
+        playGame(object, texture, miniObject, renderer, file);
+        break;
+    case PAGE_STATUS_MINIGAME:
+        playMinigame(renderer, miniObject, object);
         break;
     case PAGE_STATUS_MANUAL:
         renderManual(texture, renderer);
@@ -1241,8 +1564,7 @@ void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, SDL
     }
 }
 
-// minigame
-
+// main
 int main(int argc, char *argv[])
 {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
@@ -1255,9 +1577,11 @@ int main(int argc, char *argv[])
 
     GameObjects object;
     GameTextures texture;
-
     loadMusic(&object);
     loadSurfaces(&object, &texture, renderer);
+
+    MinGameObjects miniObject;
+    loadMinigameSurface(renderer, &miniObject);
 
     FILE *file = fopen("highscore.txt", "r");
     fscanf(file, "%ld", &highScore);
@@ -1272,7 +1596,7 @@ int main(int argc, char *argv[])
     {
         SDL_Event event;
 
-        renderPage(page, &object, &texture, renderer, &event, file);
+        renderPage(page, &object, &texture, &miniObject, renderer, &event, file);
 
         if (SDL_PollEvent(&event))
         {
@@ -1298,48 +1622,32 @@ int main(int argc, char *argv[])
                         page = PAGE_STATUS_GAME;
                     }
                     else
-                    {
                         texture.hover[0] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[0] = 0;
-                }
+
                 // manual button
                 if (event.button.x >= (WIDTH / 2) - 60 && event.button.x <= (WIDTH / 2) - 60 + 121 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
                 {
                     if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
                         page = PAGE_STATUS_MANUAL;
-                    }
-
                     else
-                    {
                         texture.hover[1] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[1] = 0;
-                }
+
                 // exit button
                 if (event.button.x >= WIDTH - 110 - 92 && event.button.x <= WIDTH - 110 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
                 {
                     if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
                         quit = true;
-                    }
-
                     else
-                    {
                         texture.hover[2] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[2] = 0;
-                }
             }
 
             if (page == PAGE_STATUS_MANUAL)
@@ -1348,19 +1656,12 @@ int main(int argc, char *argv[])
                 if (event.button.x >= WIDTH - 25 - 107 && event.button.x <= WIDTH - 25 && event.button.y >= HEIGHT - 45 && event.button.y <= HEIGHT - 45 + 25)
                 {
                     if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
                         page = PAGE_STATUS_MENU;
-                    }
-
                     else
-                    {
                         texture.hover[5] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[5] = 0;
-                }
             }
 
             if (page == PAGE_STATUS_OVER)
@@ -1383,14 +1684,11 @@ int main(int argc, char *argv[])
                         page = PAGE_STATUS_GAME;
                     }
                     else
-                    {
                         texture.hover[3] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[3] = 0;
-                }
+
                 // menu button
                 if (event.button.x >= WIDTH - 220 - 90 && event.button.x <= WIDTH - 220 && event.button.y >= HEIGHT - 95 && event.button.y <= HEIGHT - 75)
                 {
@@ -1400,20 +1698,18 @@ int main(int argc, char *argv[])
                         page = PAGE_STATUS_MENU;
                     }
                     else
-                    {
                         texture.hover[4] = 1;
-                    }
                 }
                 else
-                {
                     texture.hover[4] = 0;
-                }
             }
         }
     }
 
     fclose(file);
     destroyTextures(&texture);
+    // destroyTextTextures(&texture);
+    destroyMinigameTextures(&miniObject);
     destroyMusic(&object);
     TTF_CloseFont(object.font);
     SDL_DestroyRenderer(renderer);
