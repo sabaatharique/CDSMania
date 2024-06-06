@@ -15,8 +15,9 @@ const float GRAVITY = 0.325;
 long int score, highScore;
 int lives;
 int prices[7] = {70, 25, 40, 25, 10, 10, 50};
-int item[9] = {0}, totalPerItem[7] = {0};
+int item[9] = {0};
 const char itemNames[9][101] = {"x Burger", "x Chicken Ball", "x Double Coffee", "x Lemonade", "x Samosa", "x Chaa", "x Sandwich", "x Bombs", "x Joshims hurt"};
+int difficulty;
 
 // game structs
 typedef struct
@@ -45,7 +46,7 @@ typedef struct
 typedef struct
 {
     Man man;
-    Things food[8];
+    Things food[10];
     Cat joshim;
 
     unsigned int time;
@@ -73,7 +74,9 @@ typedef struct
     SDL_Texture *chaa;
     SDL_Texture *sndwch;
 
-    SDL_Texture *bomb[2];
+    SDL_Texture *bomb1[2];
+    SDL_Texture *bomb2[2];
+    SDL_Texture *bomb3[2];
 
     SDL_Texture *josh[2];
 
@@ -83,6 +86,7 @@ typedef struct
     SDL_Texture *background;
 
     SDL_Texture *manualPage;
+    SDL_Texture *optionsPage;
 
     SDL_Texture *itemNo[9], *itemLabels[9], *itemTotal[9], *priceTotal[3];
     SDL_Texture *receiptbg, *taka;
@@ -94,7 +98,8 @@ typedef struct
     SDL_Texture *playText[2], *manualText[2], *exitText[2];
     SDL_Texture *mainMenuText[2], *playAgainText[2];
     SDL_Texture *manualMenuText[2];
-    int hover[6];
+    SDL_Texture *resetText[2], *diff1[2], *diff2[2], *diff3[2];
+    int hover[10];
 
 } GameTextures;
 
@@ -138,8 +143,9 @@ typedef enum
     PAGE_STATUS_MENU,
     PAGE_STATUS_GAME,
     PAGE_STATUS_MINIGAME,
-    PAGE_STATUS_OVER,
-    PAGE_STATUS_MANUAL
+    PAGE_STATUS_MANUAL,
+    PAGE_STATUS_OPTIONS,
+    PAGE_STATUS_OVER
 } PageStatus;
 
 PageStatus page;
@@ -158,7 +164,7 @@ PageStatus page;
 // player
 void loadMan(GameObjects *object)
 {
-    // manasw32
+    // man
     object->man.h = 155;
     object->man.w = 100;
     object->man.dy = 0;
@@ -259,7 +265,7 @@ void manJump(GameObjects *object)
 // food
 void loadFood(GameObjects *object, int i)
 {
-    if (i == 7)
+    if (i > 6)
     {
         object->food[i].w = 66;
         object->food[i].h = 96.8;
@@ -278,7 +284,7 @@ void loadFood(GameObjects *object, int i)
 
 void foodProcess(GameObjects *object)
 {
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < difficulty; i++)
     {
         if (object->food[i].screen)
         {
@@ -288,14 +294,16 @@ void foodProcess(GameObjects *object)
         {
             object->food[i].screen = false;
         }
-    }
-
-    if (object->time % 15 == 0 && object->food[7].screen)
-    {
-        if (object->food[7].frame == 0)
-            object->food[7].frame = 1;
-        else
-            object->food[7].frame = 0;
+        if (i > 6)
+        {
+            if (object->time % 15 == 0 && object->food[i].screen)
+            {
+                if (object->food[i].frame == 0)
+                    object->food[i].frame = 1;
+                else
+                    object->food[i].frame = 0;
+            }
+        }
     }
 }
 
@@ -423,6 +431,7 @@ void destroyTextures(GameTextures *texture)
     SDL_DestroyTexture(texture->background);
 
     SDL_DestroyTexture(texture->manualPage);
+    SDL_DestroyTexture(texture->optionsPage);
 
     for (int i = 0; i < 5; i++)
     {
@@ -431,7 +440,10 @@ void destroyTextures(GameTextures *texture)
 
     for (int j = 0; j < 2; j++)
     {
-        SDL_DestroyTexture(texture->bomb[j]);
+        SDL_DestroyTexture(texture->bomb1[j]);
+        SDL_DestroyTexture(texture->bomb2[j]);
+        SDL_DestroyTexture(texture->bomb3[j]);
+
         SDL_DestroyTexture(texture->josh[j]);
 
         SDL_DestroyTexture(texture->playText[j]);
@@ -444,6 +456,11 @@ void destroyTextures(GameTextures *texture)
         SDL_DestroyTexture(texture->playAgainText[j]);
 
         SDL_DestroyTexture(texture->manualMenuText[j]);
+
+        SDL_DestroyTexture(texture->resetText[j]);
+        SDL_DestroyTexture(texture->diff1[j]);
+        SDL_DestroyTexture(texture->diff2[j]);
+        SDL_DestroyTexture(texture->diff3[j]);
     }
 
     for (int k = 0; k < 4; k++)
@@ -509,7 +526,13 @@ void renderGame(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     SDL_RenderCopy(renderer, texture->sndwch, NULL, &rectFood6);
 
     SDL_Rect rectBomb1 = {object->food[7].x, object->food[7].y, object->food[7].w, object->food[7].h};
-    SDL_RenderCopy(renderer, texture->bomb[object->food[7].frame], NULL, &rectBomb1);
+    SDL_RenderCopy(renderer, texture->bomb1[object->food[7].frame], NULL, &rectBomb1);
+
+    SDL_Rect rectBomb2 = {object->food[8].x, object->food[8].y, object->food[8].w, object->food[8].h};
+    SDL_RenderCopy(renderer, texture->bomb2[object->food[8].frame], NULL, &rectBomb2);
+
+    SDL_Rect rectBomb3 = {object->food[9].x, object->food[9].y, object->food[9].w, object->food[9].h};
+    SDL_RenderCopy(renderer, texture->bomb3[object->food[9].frame], NULL, &rectBomb3);
 
     // joshim
     SDL_Rect rectjoshim = {object->joshim.x, object->joshim.y, object->joshim.w, object->joshim.h};
@@ -569,11 +592,11 @@ void renderMenu(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     SDL_RenderCopy(renderer, texture->playText[texture->hover[0]], NULL, &rectPlay);
 
     // manual text
-    SDL_Rect rectManual = {(WIDTH / 2) - 60, HEIGHT - 175, 121, 23};
+    SDL_Rect rectManual = {(WIDTH / 2) - 70, HEIGHT - 175, 121, 23};
     SDL_RenderCopy(renderer, texture->manualText[texture->hover[1]], NULL, &rectManual);
 
-    // exit text
-    SDL_Rect rectExit = {WIDTH - 110 - 92, HEIGHT - 175, 92, 23};
+    // options text
+    SDL_Rect rectExit = {WIDTH - 110 - 142, HEIGHT - 175, 142, 23};
     SDL_RenderCopy(renderer, texture->exitText[texture->hover[2]], NULL, &rectExit);
 
     // highscore text
@@ -613,13 +636,136 @@ void renderManual(GameTextures *texture, SDL_Renderer *renderer)
     SDL_RenderPresent(renderer);
 }
 
+void renderOptions(GameTextures *texture, SDL_Renderer *renderer)
+{
+    SDL_Rect rectOptions = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, texture->optionsPage, NULL, &rectOptions);
+
+    // reset button
+    SDL_Rect rectReset = {(WIDTH - 230) / 2, HEIGHT - 120, 230, 27};
+    SDL_RenderCopy(renderer, texture->resetText[texture->hover[6]], NULL, &rectReset);
+
+    // diff1 button
+    SDL_Rect rectDiff1 = {150, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff1[texture->hover[7]], NULL, &rectDiff1);
+
+    // diff2 button
+    SDL_Rect rectDiff2 = {(WIDTH - 85) / 2, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff2[texture->hover[8]], NULL, &rectDiff2);
+
+    // diff3 button
+    SDL_Rect rectDiff3 = {WIDTH - 85 - 150, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff3[texture->hover[9]], NULL, &rectDiff3);
+
+    // menu button
+    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
+    SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
+
+    SDL_RenderPresent(renderer);
+}
+
 void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
 {
     // buttons
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 10; i++)
     {
         texture->hover[i] = 0;
     }
+
+    // options page
+    SDL_Surface *optionsPageSurface1 = IMG_Load("options.png");
+    if (optionsPageSurface1 == NULL)
+    {
+        printf("Error: options.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->optionsPage = SDL_CreateTextureFromSurface(renderer, optionsPageSurface1);
+    SDL_FreeSurface(optionsPageSurface1);
+
+    // reset
+    SDL_Surface *resetSurface1 = IMG_Load("resettext1.png");
+    if (resetSurface1 == NULL)
+    {
+        printf("Error: resettext1.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->resetText[0] = SDL_CreateTextureFromSurface(renderer, resetSurface1);
+    SDL_FreeSurface(resetSurface1);
+
+    SDL_Surface *resetSurface2 = IMG_Load("resettext2.png");
+    if (resetSurface2 == NULL)
+    {
+        printf("Error: resettext2.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->resetText[1] = SDL_CreateTextureFromSurface(renderer, resetSurface2);
+    SDL_FreeSurface(resetSurface2);
+
+    // diff 1
+    SDL_Surface *diff1Surface1 = IMG_Load("diff11.png");
+    if (diff1Surface1 == NULL)
+    {
+        printf("Error: diff11.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff1[0] = SDL_CreateTextureFromSurface(renderer, diff1Surface1);
+    SDL_FreeSurface(diff1Surface1);
+
+    SDL_Surface *diff1Surface2 = IMG_Load("diff12.png");
+    if (diff1Surface2 == NULL)
+    {
+        printf("Error: diff12.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff1[1] = SDL_CreateTextureFromSurface(renderer, diff1Surface2);
+    SDL_FreeSurface(diff1Surface2);
+
+    // diff 2
+    SDL_Surface *diff2Surface1 = IMG_Load("diff21.png");
+    if (diff2Surface1 == NULL)
+    {
+        printf("Error: diff21.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff2[0] = SDL_CreateTextureFromSurface(renderer, diff2Surface1);
+    SDL_FreeSurface(diff2Surface1);
+
+    SDL_Surface *diff2Surface2 = IMG_Load("diff22.png");
+    if (diff2Surface2 == NULL)
+    {
+        printf("Error: diff22.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff2[1] = SDL_CreateTextureFromSurface(renderer, diff2Surface2);
+    SDL_FreeSurface(diff2Surface2);
+
+    // diff 3
+    SDL_Surface *diff3Surface1 = IMG_Load("diff31.png");
+    if (diff3Surface1 == NULL)
+    {
+        printf("Error: diff31.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff3[0] = SDL_CreateTextureFromSurface(renderer, diff3Surface1);
+    SDL_FreeSurface(diff2Surface1);
+
+    SDL_Surface *diff3Surface2 = IMG_Load("diff32.png");
+    if (diff3Surface2 == NULL)
+    {
+        printf("Error: diff32.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->diff3[1] = SDL_CreateTextureFromSurface(renderer, diff3Surface2);
+    SDL_FreeSurface(diff3Surface2);
 
     // manual pages
     SDL_Surface *manualPageSurface1 = IMG_Load("instructions.png");
@@ -775,6 +921,7 @@ void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     texture->sndwch = SDL_CreateTextureFromSurface(renderer, sndwchSurface);
     SDL_FreeSurface(sndwchSurface);
 
+    // bombs
     SDL_Surface *bombSurface1 = IMG_Load("bomb1.png");
     if (bombSurface1 == NULL)
     {
@@ -782,7 +929,7 @@ void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
         SDL_Quit();
         exit(1);
     }
-    texture->bomb[0] = SDL_CreateTextureFromSurface(renderer, bombSurface1);
+    texture->bomb1[0] = SDL_CreateTextureFromSurface(renderer, bombSurface1);
     SDL_FreeSurface(bombSurface1);
 
     SDL_Surface *bombSurface2 = IMG_Load("bomb2.png");
@@ -792,8 +939,48 @@ void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
         SDL_Quit();
         exit(1);
     }
-    texture->bomb[1] = SDL_CreateTextureFromSurface(renderer, bombSurface2);
+    texture->bomb1[1] = SDL_CreateTextureFromSurface(renderer, bombSurface2);
     SDL_FreeSurface(bombSurface2);
+
+    SDL_Surface *bombSurface3 = IMG_Load("bomb1.png");
+    if (bombSurface3 == NULL)
+    {
+        printf("Error: bomb1.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->bomb2[0] = SDL_CreateTextureFromSurface(renderer, bombSurface3);
+    SDL_FreeSurface(bombSurface3);
+
+    SDL_Surface *bombSurface4 = IMG_Load("bomb2.png");
+    if (bombSurface4 == NULL)
+    {
+        printf("Error: bomb2.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->bomb2[1] = SDL_CreateTextureFromSurface(renderer, bombSurface4);
+    SDL_FreeSurface(bombSurface4);
+
+    SDL_Surface *bombSurface5 = IMG_Load("bomb1.png");
+    if (bombSurface5 == NULL)
+    {
+        printf("Error: bomb1.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->bomb3[0] = SDL_CreateTextureFromSurface(renderer, bombSurface5);
+    SDL_FreeSurface(bombSurface5);
+
+    SDL_Surface *bombSurface6 = IMG_Load("bomb2.png");
+    if (bombSurface6 == NULL)
+    {
+        printf("Error: bomb2.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->bomb3[1] = SDL_CreateTextureFromSurface(renderer, bombSurface6);
+    SDL_FreeSurface(bombSurface6);
 
     // background
     SDL_Surface *bgSurface = IMG_Load("background.png");
@@ -1514,19 +1701,20 @@ void playGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniOb
         }
     }
 
-    int r = (rand() % 8);
-    if (!(object->time % 5) && (object->food[r].y >= HEIGHT || object->food[r].y < -(object->food[r].h)))
+    int r = (rand() % difficulty);
+    if (!(object->time % 8) && (object->food[r].y >= HEIGHT || object->food[r].y < -(object->food[r].h)))
     {
         dropFood(object, r);
     }
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < difficulty; i++)
     {
         if (foodCollision(object, object, i))
         {
-            if (i == 7)
+            if (i > 6)
             {
                 Mix_PlayChannel(-1, object->soundBytes[2], 0);
                 lives--;
+                item[7]++;
                 printf("BOMB! LIVES: %d\n", lives);
                 // SDL_Delay(250);
             }
@@ -1534,9 +1722,9 @@ void playGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniOb
             {
                 Mix_PlayChannel(-1, object->soundBytes[0], 0);
                 score += prices[i];
+                item[i]++;
                 printf("1 %-15s    tk %d\n", itemNames[i], prices[i]);
             }
-            item[i]++;
             loadFood(object, i);
         }
     }
@@ -1557,6 +1745,9 @@ void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, Min
         break;
     case PAGE_STATUS_MANUAL:
         renderManual(texture, renderer);
+        break;
+    case PAGE_STATUS_OPTIONS:
+        renderOptions(texture, renderer);
         break;
     case PAGE_STATUS_OVER:
         printReceipt(object, texture, renderer);
@@ -1579,6 +1770,8 @@ int main(int argc, char *argv[])
     GameTextures texture;
     loadMusic(&object);
     loadSurfaces(&object, &texture, renderer);
+
+    difficulty = 8;
 
     MinGameObjects miniObject;
     loadMinigameSurface(renderer, &miniObject);
@@ -1612,7 +1805,11 @@ int main(int argc, char *argv[])
                         Mix_PlayMusic(object.gameMusic, -1);
                         loadMan(&object);
                         loadJoshim(&object);
-                        for (int j = 0; j < 8; j++)
+                        for (int i = 0; i < 9; i++)
+                        {
+                            item[i] = 0;
+                        }
+                        for (int j = 0; j < 10; j++)
                         {
                             loadFood(&object, j);
                         }
@@ -1628,7 +1825,7 @@ int main(int argc, char *argv[])
                     texture.hover[0] = 0;
 
                 // manual button
-                if (event.button.x >= (WIDTH / 2) - 60 && event.button.x <= (WIDTH / 2) - 60 + 121 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
+                if (event.button.x >= (WIDTH / 2) - 70 && event.button.x <= (WIDTH / 2) - 70 + 121 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
                 {
                     if (event.type == SDL_MOUSEBUTTONDOWN)
                         page = PAGE_STATUS_MANUAL;
@@ -1638,11 +1835,11 @@ int main(int argc, char *argv[])
                 else
                     texture.hover[1] = 0;
 
-                // exit button
-                if (event.button.x >= WIDTH - 110 - 92 && event.button.x <= WIDTH - 110 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
+                // options button
+                if (event.button.x >= WIDTH - 110 - 142 && event.button.x <= WIDTH - 110 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
                 {
                     if (event.type == SDL_MOUSEBUTTONDOWN)
-                        quit = true;
+                        page = PAGE_STATUS_OPTIONS;
                     else
                         texture.hover[2] = 1;
                 }
@@ -1664,6 +1861,78 @@ int main(int argc, char *argv[])
                     texture.hover[5] = 0;
             }
 
+            if (page == PAGE_STATUS_OPTIONS)
+            {
+                //  menu button
+                if (event.button.x >= WIDTH - 25 - 107 && event.button.x <= WIDTH - 25 && event.button.y >= HEIGHT - 45 && event.button.y <= HEIGHT - 45 + 25)
+                {
+                    if (event.type == SDL_MOUSEBUTTONDOWN)
+                        page = PAGE_STATUS_MENU;
+                    else
+                        texture.hover[5] = 1;
+                }
+                else
+                    texture.hover[5] = 0;
+
+                // reset
+                if (event.button.x >= (WIDTH - 230) / 2 && event.button.x <= (WIDTH - 230) / 2 + 230 && event.button.y >= HEIGHT - 120 && event.button.y <= HEIGHT - 120 + 27)
+                {
+                    if (event.type == SDL_MOUSEBUTTONDOWN)
+                    {
+                        fclose(file);
+                        highScore = 0;
+                        file = fopen("highscore.txt", "w");
+                        fprintf(file, "%d", highScore);
+                    }
+                    else
+                        texture.hover[6] = 1;
+                }
+                else
+                    texture.hover[6] = 0;
+
+                //  diff1 button
+                if (event.button.x >= 150 && event.button.x <= 150 + 85 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
+                {
+                    if (event.type == SDL_MOUSEBUTTONDOWN)
+                    {
+                        difficulty = 8;
+                        printf("DIFFICULTY: EASY\n");
+                    }
+                    else
+                        texture.hover[7] = 1;
+                }
+                else
+                    texture.hover[7] = 0;
+
+                //  diff2 button
+                if (event.button.x >= (WIDTH - 85) / 2 && event.button.x <= (WIDTH - 85) / 2 + 85 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
+                {
+                    if (event.type == SDL_MOUSEBUTTONDOWN)
+                    {
+                        difficulty = 9;
+                        printf("DIFFICULTY: MEDIUM\n");
+                    }
+                    else
+                        texture.hover[8] = 1;
+                }
+                else
+                    texture.hover[8] = 0;
+
+                //  diff3 button
+                if (event.button.x >= WIDTH - 85 - 150 && event.button.x <= WIDTH - 150 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
+                {
+                    if (event.type == SDL_MOUSEBUTTONDOWN)
+                    {
+                        difficulty = 10;
+                        printf("DIFFICULTY: HARD\n");
+                    }
+                    else
+                        texture.hover[9] = 1;
+                }
+                else
+                    texture.hover[9] = 0;
+            }
+
             if (page == PAGE_STATUS_OVER)
             {
                 // replay button
@@ -1674,7 +1943,11 @@ int main(int argc, char *argv[])
                         Mix_PlayMusic(object.gameMusic, -1);
                         loadMan(&object);
                         loadJoshim(&object);
-                        for (int j = 0; j < 8; j++)
+                        for (int i = 0; i < 9; i++)
+                        {
+                            item[i] = 0;
+                        }
+                        for (int j = 0; j < 10; j++)
                         {
                             loadFood(&object, j);
                         }
@@ -1708,7 +1981,6 @@ int main(int argc, char *argv[])
 
     fclose(file);
     destroyTextures(&texture);
-    // destroyTextTextures(&texture);
     destroyMinigameTextures(&miniObject);
     destroyMusic(&object);
     TTF_CloseFont(object.font);
