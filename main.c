@@ -17,6 +17,7 @@ int lives;
 int prices[7] = {70, 25, 40, 25, 10, 10, 50};
 int item[9] = {0};
 const char itemNames[9][101] = {"x Burger", "x Chicken Ball", "x Double Coffee", "x Lemonade", "x Samosa", "x Chaa", "x Sandwich", "x Bombs", "x Joshims hurt"};
+
 int difficulty;
 
 // game structs
@@ -158,7 +159,7 @@ PageStatus page;
 4 = samosa
 5 = chaa
 6 = sndwch
-7 = bomb
+7-9 = bomb
 */
 
 // player
@@ -167,8 +168,15 @@ void loadMan(GameObjects *object)
     // man
     object->man.h = 155;
     object->man.w = 100;
+
+    if (difficulty == 8)
+        object->man.dx = 3.25;
+    if (difficulty == 9)
+        object->man.dx = 3;
+    if (difficulty == 10)
+        object->man.dx = 2.25;
+
     object->man.dy = 0;
-    object->man.dx = 3.25;
     object->man.up = false;
     object->man.x = ((WIDTH - object->man.w) / 2);
     object->man.y = HEIGHT - object->man.h;
@@ -483,185 +491,6 @@ void destroyTextTextures(GameTextures *texture)
     SDL_DestroyTexture(texture->priceTotal[1]);
     SDL_DestroyTexture(texture->priceTotal[2]);
     SDL_DestroyTexture(texture->taka);
-}
-
-void renderGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
-{
-    object->font = TTF_OpenFont("Minecraft.ttf", 200);
-
-    // bg
-    SDL_Rect rectBG = {0, 0, WIDTH, HEIGHT};
-    SDL_RenderCopy(renderer, texture->background, NULL, &rectBG);
-
-    // darken
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 250, 250, 250, 70);
-    SDL_RenderDrawRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
-    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
-
-    // man
-    SDL_Rect rectMan = {object->man.x, object->man.y, object->man.w, object->man.h};
-    SDL_RenderCopyEx(renderer, texture->character[object->man.frame], NULL, &rectMan, 0, NULL, (object->man.right == 0));
-
-    // food
-    SDL_Rect rectFood0 = {object->food[0].x, object->food[0].y, object->food[0].w, object->food[0].h};
-    SDL_RenderCopy(renderer, texture->burger, NULL, &rectFood0);
-
-    SDL_Rect rectFood1 = {object->food[1].x, object->food[1].y, object->food[1].w, object->food[1].h};
-    SDL_RenderCopy(renderer, texture->chknball, NULL, &rectFood1);
-
-    SDL_Rect rectFood2 = {object->food[2].x, object->food[2].y, object->food[2].w, object->food[2].h};
-    SDL_RenderCopy(renderer, texture->dblcoffee, NULL, &rectFood2);
-
-    SDL_Rect rectFood3 = {object->food[3].x, object->food[3].y, object->food[3].w, object->food[3].h};
-    SDL_RenderCopy(renderer, texture->lemonade, NULL, &rectFood3);
-
-    SDL_Rect rectFood4 = {object->food[4].x, object->food[4].y, object->food[4].w, object->food[4].h};
-    SDL_RenderCopy(renderer, texture->samosa, NULL, &rectFood4);
-
-    SDL_Rect rectFood5 = {object->food[5].x, object->food[5].y, object->food[5].w, object->food[5].h};
-    SDL_RenderCopy(renderer, texture->chaa, NULL, &rectFood5);
-
-    SDL_Rect rectFood6 = {object->food[6].x, object->food[6].y, object->food[6].w, object->food[6].h};
-    SDL_RenderCopy(renderer, texture->sndwch, NULL, &rectFood6);
-
-    SDL_Rect rectBomb1 = {object->food[7].x, object->food[7].y, object->food[7].w, object->food[7].h};
-    SDL_RenderCopy(renderer, texture->bomb1[object->food[7].frame], NULL, &rectBomb1);
-
-    SDL_Rect rectBomb2 = {object->food[8].x, object->food[8].y, object->food[8].w, object->food[8].h};
-    SDL_RenderCopy(renderer, texture->bomb2[object->food[8].frame], NULL, &rectBomb2);
-
-    SDL_Rect rectBomb3 = {object->food[9].x, object->food[9].y, object->food[9].w, object->food[9].h};
-    SDL_RenderCopy(renderer, texture->bomb3[object->food[9].frame], NULL, &rectBomb3);
-
-    // joshim
-    SDL_Rect rectjoshim = {object->joshim.x, object->joshim.y, object->joshim.w, object->joshim.h};
-    SDL_RenderCopyEx(renderer, texture->josh[object->joshim.frame], NULL, &rectjoshim, 0, NULL, (object->joshim.right == 0));
-
-    // score display
-    char str[100001];
-
-    object->scoreSurface = TTF_RenderText_Solid(object->font, "BILL: ", (SDL_Color){0, 0, 0, 255});
-    if (object->scoreSurface == NULL)
-    {
-        printf("Error: score textSurface not found.\n");
-        SDL_Quit();
-        exit(1);
-    }
-    texture->scoreText[0] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
-    SDL_FreeSurface(object->scoreSurface);
-    SDL_RenderCopy(renderer, texture->scoreText[0], NULL, &(SDL_Rect){15, 12, 10 * strlen("BILL: "), 23});
-
-    object->scoreSurface = TTF_RenderText_Solid(object->font, itoa(score, str, 10), (SDL_Color){0, 0, 0, 255});
-    texture->scoreText[1] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
-    SDL_FreeSurface(object->scoreSurface);
-    SDL_RenderCopy(renderer, texture->scoreText[1], NULL, &(SDL_Rect){75, 12, 14 * strlen(str), 23});
-
-    // lives display
-    object->livesSurface = TTF_RenderText_Solid(object->font, "LIVES: ", (SDL_Color){0, 0, 0, 255});
-    if (object->livesSurface == NULL)
-    {
-        printf("Error: score livesSurface not found.\n");
-        SDL_Quit();
-        exit(1);
-    }
-    texture->livesText = SDL_CreateTextureFromSurface(renderer, object->livesSurface);
-    SDL_FreeSurface(object->livesSurface);
-    SDL_RenderCopy(renderer, texture->livesText, NULL, &(SDL_Rect){WIDTH - 175, 12, 11 * strlen("LIVES: "), 23});
-
-    SDL_Rect rectHeart = {WIDTH - 95, 11, 76, 19};
-    SDL_RenderCopy(renderer, texture->hearts[lives], NULL, &rectHeart);
-
-    SDL_DestroyTexture(texture->livesText);
-
-    SDL_DestroyTexture(texture->scoreText[0]);
-    SDL_DestroyTexture(texture->scoreText[1]);
-
-    SDL_RenderPresent(renderer);
-}
-
-void renderMenu(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
-{
-    object->font = TTF_OpenFont("Arcadepix Plus.ttf", 200);
-
-    SDL_Rect rectMain = {0, 0, WIDTH, HEIGHT};
-    SDL_RenderCopy(renderer, texture->mainScreen, NULL, &rectMain);
-
-    // play text
-    SDL_Rect rectPlay = {110, HEIGHT - 175, 88, 23};
-    SDL_RenderCopy(renderer, texture->playText[texture->hover[0]], NULL, &rectPlay);
-
-    // manual text
-    SDL_Rect rectManual = {(WIDTH / 2) - 70, HEIGHT - 175, 121, 23};
-    SDL_RenderCopy(renderer, texture->manualText[texture->hover[1]], NULL, &rectManual);
-
-    // options text
-    SDL_Rect rectExit = {WIDTH - 110 - 142, HEIGHT - 175, 142, 23};
-    SDL_RenderCopy(renderer, texture->exitText[texture->hover[2]], NULL, &rectExit);
-
-    // highscore text
-    char str[100001];
-
-    object->highScoreSurface = TTF_RenderText_Blended(object->font, itoa(highScore, str, 10), (SDL_Color){251, 249, 241, 255});
-    if (object->highScoreSurface == NULL)
-    {
-        printf("Error: highscore textSurface not found.\n");
-        SDL_Quit();
-        exit(1);
-    }
-    texture->highScoretext[1] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
-    SDL_FreeSurface(object->highScoreSurface);
-    SDL_RenderCopy(renderer, texture->highScoretext[1], NULL, &(SDL_Rect){((WIDTH - 13 * (strlen(str) - strlen("SCORE: "))) / 2), HEIGHT - 95, 13 * strlen(str), 21});
-
-    object->highScoreSurface = TTF_RenderText_Blended(object->font, "SCORE: ", (SDL_Color){251, 249, 241, 255});
-    texture->highScoretext[0] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
-    SDL_FreeSurface(object->highScoreSurface);
-    SDL_RenderCopy(renderer, texture->highScoretext[0], NULL, &(SDL_Rect){(WIDTH - 13 * (strlen(str) + strlen("SCORE: "))) / 2, HEIGHT - 95, 13 * strlen("SCORE: "), 21});
-
-    SDL_DestroyTexture(texture->highScoretext[0]);
-    SDL_DestroyTexture(texture->highScoretext[1]);
-
-    SDL_RenderPresent(renderer);
-}
-
-void renderManual(GameTextures *texture, SDL_Renderer *renderer)
-{
-    SDL_Rect rectManual = {0, 0, WIDTH, HEIGHT};
-    SDL_RenderCopy(renderer, texture->manualPage, NULL, &rectManual);
-
-    // menu button
-    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
-    SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
-
-    SDL_RenderPresent(renderer);
-}
-
-void renderOptions(GameTextures *texture, SDL_Renderer *renderer)
-{
-    SDL_Rect rectOptions = {0, 0, WIDTH, HEIGHT};
-    SDL_RenderCopy(renderer, texture->optionsPage, NULL, &rectOptions);
-
-    // reset button
-    SDL_Rect rectReset = {(WIDTH - 230) / 2, HEIGHT - 120, 230, 27};
-    SDL_RenderCopy(renderer, texture->resetText[texture->hover[6]], NULL, &rectReset);
-
-    // diff1 button
-    SDL_Rect rectDiff1 = {150, HEIGHT / 2 - 20, 85, 85};
-    SDL_RenderCopy(renderer, texture->diff1[texture->hover[7]], NULL, &rectDiff1);
-
-    // diff2 button
-    SDL_Rect rectDiff2 = {(WIDTH - 85) / 2, HEIGHT / 2 - 20, 85, 85};
-    SDL_RenderCopy(renderer, texture->diff2[texture->hover[8]], NULL, &rectDiff2);
-
-    // diff3 button
-    SDL_Rect rectDiff3 = {WIDTH - 85 - 150, HEIGHT / 2 - 20, 85, 85};
-    SDL_RenderCopy(renderer, texture->diff3[texture->hover[9]], NULL, &rectDiff3);
-
-    // menu button
-    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
-    SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
-
-    SDL_RenderPresent(renderer);
 }
 
 void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
@@ -1185,6 +1014,185 @@ void loadSurfaces(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     // highscore
 }
 
+void renderGame(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
+{
+    object->font = TTF_OpenFont("Minecraft.ttf", 200);
+
+    // bg
+    SDL_Rect rectBG = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, texture->background, NULL, &rectBG);
+
+    // darken
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 250, 250, 250, 40);
+    SDL_RenderDrawRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
+    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
+
+    // man
+    SDL_Rect rectMan = {object->man.x, object->man.y, object->man.w, object->man.h};
+    SDL_RenderCopyEx(renderer, texture->character[object->man.frame], NULL, &rectMan, 0, NULL, (object->man.right == 0));
+
+    // food
+    SDL_Rect rectFood0 = {object->food[0].x, object->food[0].y, object->food[0].w, object->food[0].h};
+    SDL_RenderCopy(renderer, texture->burger, NULL, &rectFood0);
+
+    SDL_Rect rectFood1 = {object->food[1].x, object->food[1].y, object->food[1].w, object->food[1].h};
+    SDL_RenderCopy(renderer, texture->chknball, NULL, &rectFood1);
+
+    SDL_Rect rectFood2 = {object->food[2].x, object->food[2].y, object->food[2].w, object->food[2].h};
+    SDL_RenderCopy(renderer, texture->dblcoffee, NULL, &rectFood2);
+
+    SDL_Rect rectFood3 = {object->food[3].x, object->food[3].y, object->food[3].w, object->food[3].h};
+    SDL_RenderCopy(renderer, texture->lemonade, NULL, &rectFood3);
+
+    SDL_Rect rectFood4 = {object->food[4].x, object->food[4].y, object->food[4].w, object->food[4].h};
+    SDL_RenderCopy(renderer, texture->samosa, NULL, &rectFood4);
+
+    SDL_Rect rectFood5 = {object->food[5].x, object->food[5].y, object->food[5].w, object->food[5].h};
+    SDL_RenderCopy(renderer, texture->chaa, NULL, &rectFood5);
+
+    SDL_Rect rectFood6 = {object->food[6].x, object->food[6].y, object->food[6].w, object->food[6].h};
+    SDL_RenderCopy(renderer, texture->sndwch, NULL, &rectFood6);
+
+    SDL_Rect rectBomb1 = {object->food[7].x, object->food[7].y, object->food[7].w, object->food[7].h};
+    SDL_RenderCopy(renderer, texture->bomb1[object->food[7].frame], NULL, &rectBomb1);
+
+    SDL_Rect rectBomb2 = {object->food[8].x, object->food[8].y, object->food[8].w, object->food[8].h};
+    SDL_RenderCopy(renderer, texture->bomb2[object->food[8].frame], NULL, &rectBomb2);
+
+    SDL_Rect rectBomb3 = {object->food[9].x, object->food[9].y, object->food[9].w, object->food[9].h};
+    SDL_RenderCopy(renderer, texture->bomb3[object->food[9].frame], NULL, &rectBomb3);
+
+    // joshim
+    SDL_Rect rectjoshim = {object->joshim.x, object->joshim.y, object->joshim.w, object->joshim.h};
+    SDL_RenderCopyEx(renderer, texture->josh[object->joshim.frame], NULL, &rectjoshim, 0, NULL, (object->joshim.right == 0));
+
+    // score display
+    char str[100001];
+
+    object->scoreSurface = TTF_RenderText_Solid(object->font, "BILL: ", (SDL_Color){0, 0, 0, 255});
+    if (object->scoreSurface == NULL)
+    {
+        printf("Error: score textSurface not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->scoreText[0] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
+    SDL_FreeSurface(object->scoreSurface);
+    SDL_RenderCopy(renderer, texture->scoreText[0], NULL, &(SDL_Rect){15, 12, 10 * strlen("BILL: "), 23});
+
+    object->scoreSurface = TTF_RenderText_Solid(object->font, itoa(score, str, 10), (SDL_Color){0, 0, 0, 255});
+    texture->scoreText[1] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
+    SDL_FreeSurface(object->scoreSurface);
+    SDL_RenderCopy(renderer, texture->scoreText[1], NULL, &(SDL_Rect){75, 12, 14 * strlen(str), 23});
+
+    // lives display
+    object->livesSurface = TTF_RenderText_Solid(object->font, "LIVES: ", (SDL_Color){0, 0, 0, 255});
+    if (object->livesSurface == NULL)
+    {
+        printf("Error: score livesSurface not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->livesText = SDL_CreateTextureFromSurface(renderer, object->livesSurface);
+    SDL_FreeSurface(object->livesSurface);
+    SDL_RenderCopy(renderer, texture->livesText, NULL, &(SDL_Rect){WIDTH - 175, 12, 11 * strlen("LIVES: "), 23});
+
+    SDL_Rect rectHeart = {WIDTH - 95, 11, 76, 19};
+    SDL_RenderCopy(renderer, texture->hearts[lives], NULL, &rectHeart);
+
+    SDL_DestroyTexture(texture->livesText);
+
+    SDL_DestroyTexture(texture->scoreText[0]);
+    SDL_DestroyTexture(texture->scoreText[1]);
+
+    SDL_RenderPresent(renderer);
+}
+
+void renderMenu(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
+{
+    object->font = TTF_OpenFont("Arcadepix Plus.ttf", 200);
+
+    SDL_Rect rectMain = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, texture->mainScreen, NULL, &rectMain);
+
+    // play text
+    SDL_Rect rectPlay = {110, HEIGHT - 175, 88, 23};
+    SDL_RenderCopy(renderer, texture->playText[texture->hover[0]], NULL, &rectPlay);
+
+    // manual text
+    SDL_Rect rectManual = {(WIDTH / 2) - 70, HEIGHT - 175, 121, 23};
+    SDL_RenderCopy(renderer, texture->manualText[texture->hover[1]], NULL, &rectManual);
+
+    // options text
+    SDL_Rect rectExit = {WIDTH - 110 - 142, HEIGHT - 175, 142, 23};
+    SDL_RenderCopy(renderer, texture->exitText[texture->hover[2]], NULL, &rectExit);
+
+    // highscore text
+    char str[100001];
+
+    object->highScoreSurface = TTF_RenderText_Blended(object->font, itoa(highScore, str, 10), (SDL_Color){251, 249, 241, 255});
+    if (object->highScoreSurface == NULL)
+    {
+        printf("Error: highscore textSurface not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    texture->highScoretext[1] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
+    SDL_FreeSurface(object->highScoreSurface);
+    SDL_RenderCopy(renderer, texture->highScoretext[1], NULL, &(SDL_Rect){((WIDTH - 13 * (strlen(str) - strlen("SCORE: "))) / 2), HEIGHT - 95, 13 * strlen(str), 21});
+
+    object->highScoreSurface = TTF_RenderText_Blended(object->font, "SCORE: ", (SDL_Color){251, 249, 241, 255});
+    texture->highScoretext[0] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
+    SDL_FreeSurface(object->highScoreSurface);
+    SDL_RenderCopy(renderer, texture->highScoretext[0], NULL, &(SDL_Rect){(WIDTH - 13 * (strlen(str) + strlen("SCORE: "))) / 2, HEIGHT - 95, 13 * strlen("SCORE: "), 21});
+
+    SDL_DestroyTexture(texture->highScoretext[0]);
+    SDL_DestroyTexture(texture->highScoretext[1]);
+
+    SDL_RenderPresent(renderer);
+}
+
+void renderManual(GameTextures *texture, SDL_Renderer *renderer)
+{
+    SDL_Rect rectManual = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, texture->manualPage, NULL, &rectManual);
+
+    // menu button
+    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
+    SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
+
+    SDL_RenderPresent(renderer);
+}
+
+void renderOptions(GameTextures *texture, SDL_Renderer *renderer)
+{
+    SDL_Rect rectOptions = {0, 0, WIDTH, HEIGHT};
+    SDL_RenderCopy(renderer, texture->optionsPage, NULL, &rectOptions);
+
+    // reset button
+    SDL_Rect rectReset = {(WIDTH - 230) / 2, HEIGHT - 120, 230, 27};
+    SDL_RenderCopy(renderer, texture->resetText[texture->hover[6]], NULL, &rectReset);
+
+    // diff1 button
+    SDL_Rect rectDiff1 = {150, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff1[texture->hover[7]], NULL, &rectDiff1);
+
+    // diff2 button
+    SDL_Rect rectDiff2 = {(WIDTH - 85) / 2, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff2[texture->hover[8]], NULL, &rectDiff2);
+
+    // diff3 button
+    SDL_Rect rectDiff3 = {WIDTH - 85 - 150, HEIGHT / 2 - 20, 85, 85};
+    SDL_RenderCopy(renderer, texture->diff3[texture->hover[9]], NULL, &rectDiff3);
+
+    // menu button
+    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
+    SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
+
+    SDL_RenderPresent(renderer);
+}
+
 void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *renderer)
 {
     int i, j;
@@ -1526,8 +1534,15 @@ void renderMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
 
     SDL_RenderClear(renderer);
 
+    // background
     SDL_Rect rectBack = {0, 0, WIDTH, HEIGHT};
     SDL_RenderCopy(renderer, game->back, NULL, &rectBack);
+
+    // darken
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 250, 250, 250, 20);
+    SDL_RenderDrawRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
+    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
 
     SDL_Rect rectCat = {game->mincat.a, game->mincat.b, game->mincat.w, game->mincat.h};
     SDL_RenderCopyEx(renderer, game->cat[game->mincat.frame], NULL, &rectCat, 0, NULL, game->mincat.right);
@@ -1560,8 +1575,9 @@ void renderMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
     SDL_RenderPresent(renderer);
 }
 
-void loadMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
+void loadMinigameSurfaces(SDL_Renderer *renderer, MinGameObjects *game)
 {
+    // joshim
     SDL_Surface *catSurface1 = IMG_Load("joshim3.png");
     if (catSurface1 == NULL)
     {
@@ -1582,31 +1598,60 @@ void loadMinigameSurface(SDL_Renderer *renderer, MinGameObjects *game)
     game->cat[1] = SDL_CreateTextureFromSurface(renderer, catSurface2);
     SDL_FreeSurface(catSurface2);
 
-    SDL_Surface *platSurface = NULL;
-    SDL_Surface *targSurface = NULL;
-    SDL_Surface *backSurface = NULL;
-    SDL_Surface *panjimSurface = NULL;
-    SDL_Surface *heartSurface = NULL;
-
-    heartSurface = IMG_Load("heart.png");
-
-    platSurface = IMG_Load("plat.png");
-    targSurface = IMG_Load("targ.png");
-    backSurface = IMG_Load("backgr.png");
-    panjimSurface = IMG_Load("meal.png");
-
+    // platform
+    SDL_Surface *platSurface = IMG_Load("plat.png");
+    if (platSurface == NULL)
+    {
+        printf("Error: plat.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
     game->plat = SDL_CreateTextureFromSurface(renderer, platSurface);
-    game->targ = SDL_CreateTextureFromSurface(renderer, targSurface);
-    game->back = SDL_CreateTextureFromSurface(renderer, backSurface);
-    game->panjim = SDL_CreateTextureFromSurface(renderer, panjimSurface);
-    game->heart = SDL_CreateTextureFromSurface(renderer, heartSurface);
-
-    SDL_FreeSurface(heartSurface);
-    SDL_FreeSurface(panjimSurface);
-    SDL_FreeSurface(backSurface);
-    SDL_FreeSurface(targSurface);
-
     SDL_FreeSurface(platSurface);
+
+    // blocks
+    SDL_Surface *blockSurface = IMG_Load("targ.png");
+    if (blockSurface == NULL)
+    {
+        printf("Error: targ.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->targ = SDL_CreateTextureFromSurface(renderer, blockSurface);
+    SDL_FreeSurface(blockSurface);
+
+    // background
+    SDL_Surface *backSurface = IMG_Load("miniBackground.png");
+    if (backSurface == NULL)
+    {
+        printf("Error: backgr.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->back = SDL_CreateTextureFromSurface(renderer, backSurface);
+    SDL_FreeSurface(backSurface);
+
+    // ...panjim?
+    SDL_Surface *panjimSurface = IMG_Load("heart.png");
+    if (panjimSurface == NULL)
+    {
+        printf("Error: heart.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->panjim = SDL_CreateTextureFromSurface(renderer, panjimSurface);
+    SDL_FreeSurface(panjimSurface);
+
+    // heart
+    SDL_Surface *heartSurface = IMG_Load("meal.png");
+    if (heartSurface == NULL)
+    {
+        printf("Error: heart.png not found.\n");
+        SDL_Quit();
+        exit(1);
+    }
+    game->heart = SDL_CreateTextureFromSurface(renderer, heartSurface);
+    SDL_FreeSurface(heartSurface);
 }
 
 void destroyMinigameTextures(MinGameObjects *game)
@@ -1645,6 +1690,24 @@ bool quitCheck(SDL_Event *event)
     return false;
 }
 
+void gameInitialise(GameObjects *object)
+{
+    Mix_PlayMusic(object->gameMusic, -1);
+    loadMan(object);
+    loadJoshim(object);
+    for (int i = 0; i < 9; i++)
+    {
+        item[i] = 0;
+    }
+    for (int j = 0; j < 10; j++)
+    {
+        loadFood(object, j);
+    }
+    score = 0;
+    lives = 3;
+    object->time = 0;
+}
+
 void playGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniObject, SDL_Renderer *renderer, FILE *file)
 {
     renderGame(object, texture, renderer);
@@ -1667,7 +1730,7 @@ void playGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniOb
             fprintf(file, "%ld", highScore);
         }
 
-        printf("GAME OVER! SCORE: %d\n", score);
+        printf("GAME OVER!\nTOTAL BILL:%12s %ld\n", "tk", score);
         printf("HIGHSCORE: %ld\n", highScore);
 
         page = PAGE_STATUS_OVER;
@@ -1755,6 +1818,177 @@ void renderPage(PageStatus page, GameObjects *object, GameTextures *texture, Min
     }
 }
 
+void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FILE *file)
+{
+    if (page == PAGE_STATUS_MENU)
+    {
+        // play button
+        if (event->button.x >= 110 && event->button.x <= 198 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                gameInitialise(object);
+                page = PAGE_STATUS_GAME;
+            }
+            else
+                texture->hover[0] = 1;
+        }
+        else
+            texture->hover[0] = 0;
+
+        // manual button
+        if (event->button.x >= (WIDTH / 2) - 70 && event->button.x <= (WIDTH / 2) - 70 + 121 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+                page = PAGE_STATUS_MANUAL;
+            else
+                texture->hover[1] = 1;
+        }
+        else
+            texture->hover[1] = 0;
+
+        // options button
+        if (event->button.x >= WIDTH - 110 - 142 && event->button.x <= WIDTH - 110 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+                page = PAGE_STATUS_OPTIONS;
+            else
+                texture->hover[2] = 1;
+        }
+        else
+            texture->hover[2] = 0;
+    }
+
+    if (page == PAGE_STATUS_MANUAL)
+    {
+        //  menu button
+        if (event->button.x >= WIDTH - 25 - 107 && event->button.x <= WIDTH - 25 && event->button.y >= HEIGHT - 45 && event->button.y <= HEIGHT - 45 + 25)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+                page = PAGE_STATUS_MENU;
+            else
+                texture->hover[5] = 1;
+        }
+        else
+            texture->hover[5] = 0;
+    }
+
+    if (page == PAGE_STATUS_OPTIONS)
+    {
+        //  menu button
+        if (event->button.x >= WIDTH - 25 - 107 && event->button.x <= WIDTH - 25 && event->button.y >= HEIGHT - 45 && event->button.y <= HEIGHT - 45 + 25)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+                page = PAGE_STATUS_MENU;
+            else
+                texture->hover[5] = 1;
+        }
+        else
+            texture->hover[5] = 0;
+
+        // reset
+        if (event->button.x >= (WIDTH - 230) / 2 && event->button.x <= (WIDTH - 230) / 2 + 230 && event->button.y >= HEIGHT - 120 && event->button.y <= HEIGHT - 120 + 27)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                fclose(file);
+                highScore = 0;
+                file = fopen("highscore.txt", "w");
+                fprintf(file, "%d", highScore);
+                printf("GAME HAS BEEN RESET! HIGHSCORE: %d\n", highScore);
+            }
+            else
+                texture->hover[6] = 1;
+        }
+        else
+            texture->hover[6] = 0;
+
+        //  diff1 button
+        if (event->button.x >= 150 && event->button.x <= 150 + 85 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                difficulty = 8;
+                printf("DIFFICULTY: EASY\n");
+            }
+            else
+                texture->hover[7] = 1;
+        }
+        else
+            texture->hover[7] = 0;
+
+        //  diff2 button
+        if (event->button.x >= (WIDTH - 85) / 2 && event->button.x <= (WIDTH - 85) / 2 + 85 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                difficulty = 9;
+                printf("DIFFICULTY: MEDIUM\n");
+            }
+            else
+                texture->hover[8] = 1;
+        }
+        else
+            texture->hover[8] = 0;
+
+        //  diff3 button
+        if (event->button.x >= WIDTH - 85 - 150 && event->button.x <= WIDTH - 150 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                difficulty = 10;
+                printf("DIFFICULTY: HARD\n");
+            }
+            else
+                texture->hover[9] = 1;
+        }
+        else
+            texture->hover[9] = 0;
+    }
+
+    if (page == PAGE_STATUS_OVER)
+    {
+        // replay button
+        if (event->button.x >= 220 && event->button.x <= 335 && event->button.y >= HEIGHT - 95 && event->button.y <= HEIGHT - 75)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                gameInitialise(object);
+                page = PAGE_STATUS_GAME;
+            }
+            else
+                texture->hover[3] = 1;
+        }
+        else
+            texture->hover[3] = 0;
+
+        // menu button
+        if (event->button.x >= WIDTH - 220 - 90 && event->button.x <= WIDTH - 220 && event->button.y >= HEIGHT - 95 && event->button.y <= HEIGHT - 75)
+        {
+            if (event->type == SDL_MOUSEBUTTONDOWN)
+            {
+                Mix_PlayMusic(object->menuMusic, -1);
+                page = PAGE_STATUS_MENU;
+            }
+            else
+                texture->hover[4] = 1;
+        }
+        else
+            texture->hover[4] = 0;
+    }
+}
+
+void endGame(GameObjects *object, GameTextures *texture, MinGameObjects *miniObject, SDL_Renderer *renderer, SDL_Window *window, FILE *file)
+{
+    fclose(file);
+    destroyTextures(texture);
+    destroyMinigameTextures(miniObject);
+    destroyMusic(object);
+    TTF_CloseFont(object->font);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+}
+
 // main
 int main(int argc, char *argv[])
 {
@@ -1763,22 +1997,19 @@ int main(int argc, char *argv[])
 
     SDL_Window *window = SDL_CreateWindow("✧ CDSMania ✧", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 
     GameObjects object;
     GameTextures texture;
     loadMusic(&object);
     loadSurfaces(&object, &texture, renderer);
-
     difficulty = 8;
 
     MinGameObjects miniObject;
-    loadMinigameSurface(renderer, &miniObject);
+    loadMinigameSurfaces(renderer, &miniObject);
 
     FILE *file = fopen("highscore.txt", "r");
     fscanf(file, "%ld", &highScore);
-    // printf("beg: %ld\n", highScore);
 
     Mix_PlayMusic(object.menuMusic, -1);
     page = PAGE_STATUS_MENU;
@@ -1795,198 +2026,11 @@ int main(int argc, char *argv[])
         {
             quit = quitCheck(&event);
 
-            if (page == PAGE_STATUS_MENU)
-            {
-                // play button
-                if (event.button.x >= 110 && event.button.x <= 198 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        Mix_PlayMusic(object.gameMusic, -1);
-                        loadMan(&object);
-                        loadJoshim(&object);
-                        for (int i = 0; i < 9; i++)
-                        {
-                            item[i] = 0;
-                        }
-                        for (int j = 0; j < 10; j++)
-                        {
-                            loadFood(&object, j);
-                        }
-                        score = 0;
-                        lives = 3;
-                        object.time = 0;
-                        page = PAGE_STATUS_GAME;
-                    }
-                    else
-                        texture.hover[0] = 1;
-                }
-                else
-                    texture.hover[0] = 0;
-
-                // manual button
-                if (event.button.x >= (WIDTH / 2) - 70 && event.button.x <= (WIDTH / 2) - 70 + 121 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                        page = PAGE_STATUS_MANUAL;
-                    else
-                        texture.hover[1] = 1;
-                }
-                else
-                    texture.hover[1] = 0;
-
-                // options button
-                if (event.button.x >= WIDTH - 110 - 142 && event.button.x <= WIDTH - 110 && event.button.y >= HEIGHT - 175 && event.button.y <= HEIGHT - 175 + 19)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                        page = PAGE_STATUS_OPTIONS;
-                    else
-                        texture.hover[2] = 1;
-                }
-                else
-                    texture.hover[2] = 0;
-            }
-
-            if (page == PAGE_STATUS_MANUAL)
-            {
-                //  menu button
-                if (event.button.x >= WIDTH - 25 - 107 && event.button.x <= WIDTH - 25 && event.button.y >= HEIGHT - 45 && event.button.y <= HEIGHT - 45 + 25)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                        page = PAGE_STATUS_MENU;
-                    else
-                        texture.hover[5] = 1;
-                }
-                else
-                    texture.hover[5] = 0;
-            }
-
-            if (page == PAGE_STATUS_OPTIONS)
-            {
-                //  menu button
-                if (event.button.x >= WIDTH - 25 - 107 && event.button.x <= WIDTH - 25 && event.button.y >= HEIGHT - 45 && event.button.y <= HEIGHT - 45 + 25)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                        page = PAGE_STATUS_MENU;
-                    else
-                        texture.hover[5] = 1;
-                }
-                else
-                    texture.hover[5] = 0;
-
-                // reset
-                if (event.button.x >= (WIDTH - 230) / 2 && event.button.x <= (WIDTH - 230) / 2 + 230 && event.button.y >= HEIGHT - 120 && event.button.y <= HEIGHT - 120 + 27)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        fclose(file);
-                        highScore = 0;
-                        file = fopen("highscore.txt", "w");
-                        fprintf(file, "%d", highScore);
-                    }
-                    else
-                        texture.hover[6] = 1;
-                }
-                else
-                    texture.hover[6] = 0;
-
-                //  diff1 button
-                if (event.button.x >= 150 && event.button.x <= 150 + 85 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        difficulty = 8;
-                        printf("DIFFICULTY: EASY\n");
-                    }
-                    else
-                        texture.hover[7] = 1;
-                }
-                else
-                    texture.hover[7] = 0;
-
-                //  diff2 button
-                if (event.button.x >= (WIDTH - 85) / 2 && event.button.x <= (WIDTH - 85) / 2 + 85 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        difficulty = 9;
-                        printf("DIFFICULTY: MEDIUM\n");
-                    }
-                    else
-                        texture.hover[8] = 1;
-                }
-                else
-                    texture.hover[8] = 0;
-
-                //  diff3 button
-                if (event.button.x >= WIDTH - 85 - 150 && event.button.x <= WIDTH - 150 && event.button.y >= (HEIGHT / 2) - 20 && event.button.y <= (HEIGHT / 2) - 20 + 85)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        difficulty = 10;
-                        printf("DIFFICULTY: HARD\n");
-                    }
-                    else
-                        texture.hover[9] = 1;
-                }
-                else
-                    texture.hover[9] = 0;
-            }
-
-            if (page == PAGE_STATUS_OVER)
-            {
-                // replay button
-                if (event.button.x >= 220 && event.button.x <= 335 && event.button.y >= HEIGHT - 95 && event.button.y <= HEIGHT - 75)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        Mix_PlayMusic(object.gameMusic, -1);
-                        loadMan(&object);
-                        loadJoshim(&object);
-                        for (int i = 0; i < 9; i++)
-                        {
-                            item[i] = 0;
-                        }
-                        for (int j = 0; j < 10; j++)
-                        {
-                            loadFood(&object, j);
-                        }
-                        score = 0;
-                        lives = 3;
-                        object.time = 0;
-                        page = PAGE_STATUS_GAME;
-                    }
-                    else
-                        texture.hover[3] = 1;
-                }
-                else
-                    texture.hover[3] = 0;
-
-                // menu button
-                if (event.button.x >= WIDTH - 220 - 90 && event.button.x <= WIDTH - 220 && event.button.y >= HEIGHT - 95 && event.button.y <= HEIGHT - 75)
-                {
-                    if (event.type == SDL_MOUSEBUTTONDOWN)
-                    {
-                        Mix_PlayMusic(object.menuMusic, -1);
-                        page = PAGE_STATUS_MENU;
-                    }
-                    else
-                        texture.hover[4] = 1;
-                }
-                else
-                    texture.hover[4] = 0;
-            }
+            navigator(&object, &texture, &event, file);
         }
     }
 
-    fclose(file);
-    destroyTextures(&texture);
-    destroyMinigameTextures(&miniObject);
-    destroyMusic(&object);
-    TTF_CloseFont(object.font);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    TTF_Quit();
+    endGame(&object, &texture, &miniObject, renderer, window, file);
     SDL_Quit();
 
     return 0;
