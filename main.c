@@ -1510,15 +1510,16 @@ void minigameProcess(MinGameObjects *game, GameObjects *object)
 
             if (k % 2)
             {
-                score += 150;
-                printf("BONUS! +150tk\n");
+                if (lives < 3)
+                    lives++;
+                printf("BONUS! +1 LIFE\n");
                 // printf("\nUIII");
             }
             else
             {
-                if (lives < 3)
-                    lives++;
-                printf("BONUS! +1 LIFE\n");
+                score += 150;
+                printf("BONUS! +150tk\n");
+
                 // printf("\nyee");
             }
 
