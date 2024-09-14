@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "time.h": "c",
+        "stdbool.h": "c",
+        "sdl_ttf.h": "c",
+        "food.h": "c",
+        "sdl_image.h": "c",
+        "sdl.h": "c",
+        "man.h": "c",
+        "stdio.h": "c",
+        "visuals.h": "c",
+        "stdlib.h": "c"
+    }
+}
