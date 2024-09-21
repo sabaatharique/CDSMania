@@ -17,8 +17,8 @@ int lives;
 int prices[7] = {70, 25, 40, 25, 10, 10, 50};
 int item[9] = {0};
 const char itemNames[9][101] = {"x Burger", "x Chicken Ball", "x Double Coffee", "x Lemonade", "x Samosa", "x Chaa", "x Sandwich", "x Bombs", "x Joshims hurt"};
-
 int difficulty;
+// bool fullScreen = false;
 
 // game structs
 typedef struct
@@ -1687,9 +1687,28 @@ bool quitCheck(SDL_Event *event)
             break;
         }
     }
-
     return false;
 }
+
+/* void makeFullScreen(SDL_Event *event, SDL_Window *window)
+{
+    if (event->type == SDL_KEYDOWN)
+    {
+        if (event->key.keysym.sym == SDLK_f)
+        {
+            // Toggle fullscreen mode
+            if (fullScreen)
+            {
+                SDL_SetWindowFullscreen(window, 0); // Exit fullscreen
+            }
+            else
+            {
+                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP); // Enter fullscreen
+            }
+            fullScreen = !fullScreen;
+        }
+    }
+}*/
 
 void gameInitialise(GameObjects *object)
 {
@@ -2028,6 +2047,8 @@ int main(int argc, char *argv[])
             quit = quitCheck(&event);
 
             navigator(&object, &texture, &event, file);
+
+            // makeFullScreen(&event, window);
         }
     }
 
