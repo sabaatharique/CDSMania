@@ -8,7 +8,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-const int WIDTH = 720, HEIGHT = 540;
+int scale = 2;
+const int WIDTH = 1330, HEIGHT = 1000;
 
 const float GRAVITY = 0.30;
 
@@ -138,6 +139,8 @@ typedef struct
 
 } MinGameObjects;
 
+// minigame2 structs
+
 // pages
 typedef enum
 {
@@ -166,15 +169,15 @@ PageStatus page;
 void loadMan(GameObjects *object)
 {
     // man
-    object->man.h = 155;
-    object->man.w = 100;
+    object->man.h = 155 * scale;
+    object->man.w = 100 * scale;
 
     if (difficulty == 8)
-        object->man.dx = 3.25;
+        object->man.dx = 3.25 * scale;
     if (difficulty == 9)
-        object->man.dx = 3;
+        object->man.dx = 3 * scale;
     if (difficulty == 10)
-        object->man.dx = 2.25;
+        object->man.dx = 2.25 * scale;
 
     object->man.dy = 0;
     object->man.up = false;
@@ -262,7 +265,7 @@ void manJump(GameObjects *object)
             if (object->man.y > 0)
             {
                 Mix_PlayChannel(-1, object->soundBytes[3], 0);
-                object->man.dy = 2.5;
+                object->man.dy = 2.5 * scale;
                 object->man.y = HEIGHT - object->man.h - 225;
                 object->man.up = true;
             }
@@ -275,17 +278,17 @@ void loadFood(GameObjects *object, int i)
 {
     if (i > 6)
     {
-        object->food[i].w = 66;
-        object->food[i].h = 96.8;
+        object->food[i].w = 66 * scale;
+        object->food[i].h = 96.8 * scale;
     }
     else
     {
-        object->food[i].w = 60;
-        object->food[i].h = 60;
+        object->food[i].w = 60 * scale;
+        object->food[i].h = 60 * scale;
     }
     object->food[i].x = (rand() % (WIDTH - object->food[i].w));
     object->food[i].y = HEIGHT;
-    object->food[i].dy = 1 + (i / 3);
+    object->food[i].dy = (1 + (i / 3)) * scale;
     object->food[i].screen = false;
     object->food[i].frame = 0;
 }
@@ -339,8 +342,8 @@ void dropFood(GameObjects *object, int i)
 // joshim
 void loadJoshim(GameObjects *object)
 {
-    object->joshim.h = 84;
-    object->joshim.w = 108;
+    object->joshim.h = 84 * scale;
+    object->joshim.w = 108 * scale;
     object->joshim.x = -(object->joshim.w);
     object->joshim.y = HEIGHT;
     object->joshim.frame = 0;
@@ -382,7 +385,7 @@ void joshimLeft(GameObjects *object)
 {
     object->joshim.x = -(object->joshim.w);
     object->joshim.y = HEIGHT - object->joshim.h;
-    object->joshim.dx = 2;
+    object->joshim.dx = 2 * scale;
     object->joshim.frame = 0;
     object->joshim.right = false;
     object->joshim.screen = true;
@@ -392,7 +395,7 @@ void joshimRight(GameObjects *object)
 {
     object->joshim.x = WIDTH;
     object->joshim.y = HEIGHT - object->joshim.h;
-    object->joshim.dx = -2;
+    object->joshim.dx = -2 * scale;
     object->joshim.frame = 0;
     object->joshim.right = true;
     object->joshim.screen = true;
@@ -1079,12 +1082,12 @@ void renderGame(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     }
     texture->scoreText[0] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
     SDL_FreeSurface(object->scoreSurface);
-    SDL_RenderCopy(renderer, texture->scoreText[0], NULL, &(SDL_Rect){15, 12, 10 * strlen("BILL: "), 23});
+    SDL_RenderCopy(renderer, texture->scoreText[0], NULL, &(SDL_Rect){25, 12, 10 * scale * strlen("BILL: "), 23 * scale});
 
     object->scoreSurface = TTF_RenderText_Solid(object->font, itoa(score, str, 10), (SDL_Color){0, 0, 0, 255});
     texture->scoreText[1] = SDL_CreateTextureFromSurface(renderer, object->scoreSurface);
     SDL_FreeSurface(object->scoreSurface);
-    SDL_RenderCopy(renderer, texture->scoreText[1], NULL, &(SDL_Rect){75, 12, 14 * strlen(str), 23});
+    SDL_RenderCopy(renderer, texture->scoreText[1], NULL, &(SDL_Rect){25 + 10 * scale * strlen("BILL: "), 12, 14 * scale * strlen(str), 23 * scale});
 
     // lives display
     SDL_Surface *surface = TTF_RenderText_Solid(object->font, "LIVES: ", (SDL_Color){0, 0, 0, 255});
@@ -1096,9 +1099,9 @@ void renderGame(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     }
     texture->livesText = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
-    SDL_RenderCopy(renderer, texture->livesText, NULL, &(SDL_Rect){WIDTH - 175, 12, 11 * strlen("LIVES: "), 23});
+    SDL_RenderCopy(renderer, texture->livesText, NULL, &(SDL_Rect){WIDTH - 95 * scale - 11 * scale * strlen("LIVES: "), 12, 11 * scale * strlen("LIVES: "), 23 * scale});
 
-    SDL_Rect rectHeart = {WIDTH - 95, 11, 76, 19};
+    SDL_Rect rectHeart = {WIDTH - 95 * scale, 11, 76 * scale, 19 * scale};
     SDL_RenderCopy(renderer, texture->hearts[lives], NULL, &rectHeart);
 
     SDL_DestroyTexture(texture->livesText);
@@ -1117,15 +1120,15 @@ void renderMenu(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     SDL_RenderCopy(renderer, texture->mainScreen, NULL, &rectMain);
 
     // play text
-    SDL_Rect rectPlay = {110, HEIGHT - 175, 88, 23};
+    SDL_Rect rectPlay = {110 * scale, HEIGHT - 175 * scale, 88 * scale, 23 * scale};
     SDL_RenderCopy(renderer, texture->playText[texture->hover[0]], NULL, &rectPlay);
 
     // manual text
-    SDL_Rect rectManual = {(WIDTH / 2) - 70, HEIGHT - 175, 121, 23};
+    SDL_Rect rectManual = {(WIDTH / 2) - 70 * scale - 10, HEIGHT - 175 * scale, 121 * scale, 23 * scale};
     SDL_RenderCopy(renderer, texture->manualText[texture->hover[1]], NULL, &rectManual);
 
     // options text
-    SDL_Rect rectExit = {WIDTH - 110 - 142, HEIGHT - 175, 142, 23};
+    SDL_Rect rectExit = {WIDTH - 110 * scale - 142 * scale, HEIGHT - 175 * scale, 142 * scale, 23 * scale};
     SDL_RenderCopy(renderer, texture->exitText[texture->hover[2]], NULL, &rectExit);
 
     // highscore text
@@ -1140,12 +1143,12 @@ void renderMenu(GameObjects *object, GameTextures *texture, SDL_Renderer *render
     }
     texture->highScoretext[1] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
     SDL_FreeSurface(object->highScoreSurface);
-    SDL_RenderCopy(renderer, texture->highScoretext[1], NULL, &(SDL_Rect){((WIDTH - 13 * (strlen(str) - strlen("SCORE: "))) / 2), HEIGHT - 95, 13 * strlen(str), 21});
+    SDL_RenderCopy(renderer, texture->highScoretext[1], NULL, &(SDL_Rect){((WIDTH - 13 * scale * (strlen(str) - strlen("SCORE: "))) / 2), HEIGHT - 95 * scale, 13 * scale * strlen(str), 21 * scale});
 
     object->highScoreSurface = TTF_RenderText_Blended(object->font, "SCORE: ", (SDL_Color){251, 249, 241, 255});
     texture->highScoretext[0] = SDL_CreateTextureFromSurface(renderer, object->highScoreSurface);
     SDL_FreeSurface(object->highScoreSurface);
-    SDL_RenderCopy(renderer, texture->highScoretext[0], NULL, &(SDL_Rect){(WIDTH - 13 * (strlen(str) + strlen("SCORE: "))) / 2, HEIGHT - 95, 13 * strlen("SCORE: "), 21});
+    SDL_RenderCopy(renderer, texture->highScoretext[0], NULL, &(SDL_Rect){(WIDTH - 13 * scale * (strlen(str) + strlen("SCORE: "))) / 2, HEIGHT - 95 * scale, 13 * scale * strlen("SCORE: "), 21 * scale});
 
     SDL_DestroyTexture(texture->highScoretext[0]);
     SDL_DestroyTexture(texture->highScoretext[1]);
@@ -1159,7 +1162,7 @@ void renderManual(GameTextures *texture, SDL_Renderer *renderer)
     SDL_RenderCopy(renderer, texture->manualPage, NULL, &rectManual);
 
     // menu button
-    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
+    SDL_Rect rectMenu = {WIDTH - 25 * scale - 107 * scale, HEIGHT - 45 * scale, 107 * scale, 25 * scale};
     SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
 
     SDL_RenderPresent(renderer);
@@ -1171,23 +1174,23 @@ void renderOptions(GameTextures *texture, SDL_Renderer *renderer)
     SDL_RenderCopy(renderer, texture->optionsPage, NULL, &rectOptions);
 
     // reset button
-    SDL_Rect rectReset = {(WIDTH - 230) / 2, HEIGHT - 120, 230, 27};
+    SDL_Rect rectReset = {(WIDTH - 230 * scale) / 2, HEIGHT - 120 * scale, 230 * scale, 27 * scale};
     SDL_RenderCopy(renderer, texture->resetText[texture->hover[6]], NULL, &rectReset);
 
     // diff1 button
-    SDL_Rect rectDiff1 = {150, HEIGHT / 2 - 20, 85, 85};
+    SDL_Rect rectDiff1 = {150 * scale, HEIGHT / 2 - 20 * scale, 85 * scale, 85 * scale};
     SDL_RenderCopy(renderer, texture->diff1[texture->hover[7]], NULL, &rectDiff1);
 
     // diff2 button
-    SDL_Rect rectDiff2 = {(WIDTH - 85) / 2, HEIGHT / 2 - 20, 85, 85};
+    SDL_Rect rectDiff2 = {(WIDTH - 85 * scale) / 2, HEIGHT / 2 - 20 * scale, 85 * scale, 85 * scale};
     SDL_RenderCopy(renderer, texture->diff2[texture->hover[8]], NULL, &rectDiff2);
 
     // diff3 button
-    SDL_Rect rectDiff3 = {WIDTH - 85 - 150, HEIGHT / 2 - 20, 85, 85};
+    SDL_Rect rectDiff3 = {WIDTH - 85 * scale - 150 * scale, HEIGHT / 2 - 20 * scale, 85 * scale, 85 * scale};
     SDL_RenderCopy(renderer, texture->diff3[texture->hover[9]], NULL, &rectDiff3);
 
     // menu button
-    SDL_Rect rectMenu = {WIDTH - 25 - 107, HEIGHT - 45, 107, 25};
+    SDL_Rect rectMenu = {WIDTH - 25 * scale - 107 * scale, HEIGHT - 45 * scale, 107 * scale, 25 * scale};
     SDL_RenderCopy(renderer, texture->manualMenuText[texture->hover[5]], NULL, &rectMenu);
 
     SDL_RenderPresent(renderer);
@@ -1211,7 +1214,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     SDL_RenderDrawRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
     SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, WIDTH, HEIGHT});
 
-    SDL_Rect rectReceipt = {(WIDTH - 377) / 2, 0, 377, HEIGHT};
+    SDL_Rect rectReceipt = {(WIDTH - 377 * scale) / 2, 0, 377 * scale, HEIGHT};
     SDL_RenderCopy(renderer, texture->receiptbg, NULL, &rectReceipt);
 
     for (i = 0; i < 9; i++)
@@ -1226,7 +1229,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
         }
         texture->itemNo[i] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
         SDL_FreeSurface(object->textSurface);
-        SDL_RenderCopy(renderer, texture->itemNo[i], NULL, &(SDL_Rect){220, 125 + (i * 28), 9 * strlen(str), 16});
+        SDL_RenderCopy(renderer, texture->itemNo[i], NULL, &(SDL_Rect){220 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 9 * scale * strlen(str), 16 * scale});
 
         // name of item
         object->textSurface = TTF_RenderText_Solid(object->font, itemNames[i], (SDL_Color){46, 46, 46, 255});
@@ -1238,7 +1241,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
         }
         texture->itemLabels[i] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
         SDL_FreeSurface(object->textSurface);
-        SDL_RenderCopy(renderer, texture->itemLabels[i], NULL, &(SDL_Rect){265, 125 + (i * 28), 9 * strlen(itemNames[i]), 16});
+        SDL_RenderCopy(renderer, texture->itemLabels[i], NULL, &(SDL_Rect){265 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 9 * scale * strlen(itemNames[i]), 16 * scale});
 
         // tk or lives
         if (i == 7)
@@ -1252,7 +1255,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
             }
             texture->taka = SDL_CreateTextureFromSurface(renderer, object->textSurface);
             SDL_FreeSurface(object->textSurface);
-            SDL_RenderCopy(renderer, texture->taka, NULL, &(SDL_Rect){425, 125 + (i * 28), 35, 16});
+            SDL_RenderCopy(renderer, texture->taka, NULL, &(SDL_Rect){425 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 35 * scale, 16 * scale});
         }
         else
         {
@@ -1265,7 +1268,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
             }
             texture->taka = SDL_CreateTextureFromSurface(renderer, object->textSurface);
             SDL_FreeSurface(object->textSurface);
-            SDL_RenderCopy(renderer, texture->taka, NULL, &(SDL_Rect){425, 125 + (i * 28), 14, 16});
+            SDL_RenderCopy(renderer, texture->taka, NULL, &(SDL_Rect){425 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 14 * scale, 16 * scale});
         }
 
         // total per item
@@ -1280,7 +1283,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
             }
             texture->itemTotal[i] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
             SDL_FreeSurface(object->textSurface);
-            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475, 125 + (i * 28), 9 * strlen(str), 16});
+            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 9 * scale * strlen(str), 16 * scale});
         }
         else if (i == 7)
         {
@@ -1293,7 +1296,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
             }
             texture->itemTotal[i] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
             SDL_FreeSurface(object->textSurface);
-            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475, 125 + (i * 28), 9, 16});
+            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 9 * scale, 16 * scale});
         }
         else if (i == 8)
         {
@@ -1306,7 +1309,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
             }
             texture->itemTotal[i] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
             SDL_FreeSurface(object->textSurface);
-            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475, 125 + (i * 28), 8.5 * strlen(str), 16});
+            SDL_RenderCopy(renderer, texture->itemTotal[i], NULL, &(SDL_Rect){475 * scale - 50, 125 * scale + (i * 28 * scale) - 30, 8.5 * scale * strlen(str), 16 * scale});
         }
     }
 
@@ -1320,7 +1323,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     }
     texture->priceTotal[0] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
     SDL_FreeSurface(object->textSurface);
-    SDL_RenderCopy(renderer, texture->priceTotal[0], NULL, &(SDL_Rect){220, 160 + (i * 28), 8.5 * strlen("TOTAL: "), 16});
+    SDL_RenderCopy(renderer, texture->priceTotal[0], NULL, &(SDL_Rect){220 * scale - 50, 160 * scale + (i * 28 * scale) - 30, 8.5 * scale * strlen("TOTAL: "), 16 * scale});
 
     object->textSurface = TTF_RenderText_Solid(object->font, "tk", (SDL_Color){46, 46, 46, 255});
     if (object->textSurface == NULL)
@@ -1331,7 +1334,7 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     }
     texture->priceTotal[1] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
     SDL_FreeSurface(object->textSurface);
-    SDL_RenderCopy(renderer, texture->priceTotal[1], NULL, &(SDL_Rect){425, 160 + (i * 28), 14, 16});
+    SDL_RenderCopy(renderer, texture->priceTotal[1], NULL, &(SDL_Rect){425 * scale - 50, 160 * scale + (i * 28 * scale) - 30, 14 * scale, 16 * scale});
 
     object->textSurface = TTF_RenderText_Solid(object->font, itoa(score, str, 10), (SDL_Color){46, 46, 46, 255});
     if (object->textSurface == NULL)
@@ -1342,14 +1345,14 @@ void printReceipt(GameObjects *object, GameTextures *texture, SDL_Renderer *rend
     }
     texture->priceTotal[2] = SDL_CreateTextureFromSurface(renderer, object->textSurface);
     SDL_FreeSurface(object->textSurface);
-    SDL_RenderCopy(renderer, texture->priceTotal[2], NULL, &(SDL_Rect){WIDTH - 220 - 9 * strlen(str), 160 + (i * 28), 9 * strlen(str), 16});
+    SDL_RenderCopy(renderer, texture->priceTotal[2], NULL, &(SDL_Rect){WIDTH - 220 * scale - 9 * scale * strlen(str) + 50, 160 * scale + (i * 28 * scale) - 30, 9 * scale * strlen(str), 16 * scale});
 
     // play again text
-    SDL_Rect rectPlay = {220, HEIGHT - 95, 115, 20};
+    SDL_Rect rectPlay = {70, HEIGHT - 100, 100 * scale, 20 * scale};
     SDL_RenderCopy(renderer, texture->playAgainText[texture->hover[3]], NULL, &rectPlay);
 
     // main menu text
-    SDL_Rect rectMenu = {WIDTH - 220 - 90, HEIGHT - 95, 94, 20};
+    SDL_Rect rectMenu = {WIDTH - 250, HEIGHT - 100, 94 * scale, 20 * scale};
     SDL_RenderCopy(renderer, texture->mainMenuText[texture->hover[4]], NULL, &rectMenu);
 
     destroyTextTextures(texture);
@@ -1364,36 +1367,36 @@ void minigameInitialize(SDL_Renderer *renderer, MinGameObjects *game)
 
     int xposition;
     srand(time(0));
-    xposition = rand() % (630 + 1 - 10) + 10;
+    xposition = rand() % (HEIGHT + 1 - 10) + 10;
 
-    game->minplat.w = 200;
-    game->minplat.h = 40;
+    game->minplat.w = 200 * scale;
+    game->minplat.h = 40 * scale;
     game->minplat.c = xposition;
     game->minplat.d = HEIGHT - game->minplat.h;
-    game->minplat.move = 5;
-    game->minplat.size = 15; // size decrease after collision
+    game->minplat.move = 5 * scale;
+    game->minplat.size = 15 * scale; // size decrease after collision
 
-    game->mincat.w = 100;
-    game->mincat.h = 80;
+    game->mincat.w = 100 * scale;
+    game->mincat.h = 80 * scale;
     game->mincat.a = xposition;
     game->mincat.b = game->minplat.d - game->mincat.h;
-    game->mincat.yspeed = 2.5;
-    game->mincat.xspeed = 1.5;
+    game->mincat.yspeed = 2.5 * scale;
+    game->mincat.xspeed = 1.5 * scale;
     game->mincat.right = true;
     game->mincat.frame = 1;
 
-    game->tar.ee[0] = 10;
+    game->tar.ee[0] = 5;
     game->tar.ff[0] = 10;
-    game->tar.targw = 100;
-    game->tar.targh = 55;
-    game->tar.targnum = 35;
+    game->tar.targw = 165;
+    game->tar.targh = 55 * scale;
+    game->tar.targnum = 40;
 
     for (int i = 1; i < game->tar.targnum; i++)
     {
-        if (game->tar.ee[i - 1] == (WIDTH - game->tar.targw - 10)) // 10 na dile ekdom 0,0 theke start hobe
+        if (game->tar.ee[i - 1] == (WIDTH - game->tar.targw - 5)) // 10 na dile ekdom 0,0 theke start hobe
         {
             game->tar.ff[i] = game->tar.ff[i - 1] + game->tar.targh;
-            game->tar.ee[i] = 10;
+            game->tar.ee[i] = 5;
         }
         else
         {
@@ -1494,13 +1497,13 @@ void minigameProcess(MinGameObjects *game, GameObjects *object)
         {
             game->mincat.xspeed = -game->mincat.xspeed;
             game->mincat.yspeed = -game->mincat.yspeed;
-            game->tar.ee[i] = 569;
-            game->tar.ff[i] = 769;
+            game->tar.ee[i] = 569 * scale;
+            game->tar.ff[i] = 769 * scale;
         }
         else if (game->mincat.a <= (game->tar.ee[k] + game->tar.targw) && game->tar.ee[k] <= (game->mincat.a + game->mincat.w) && game->mincat.b <= (game->tar.ff[k] + game->tar.targh) && game->tar.ff[k] <= (game->mincat.b + game->mincat.h))
         {
-            game->tar.ee[k] = 569;
-            game->tar.ff[k] = 769;
+            game->tar.ee[k] = 569 * scale;
+            game->tar.ff[k] = 769 * scale;
             game->mincat.xspeed = 0;
             game->mincat.yspeed = 0;
 
@@ -1842,8 +1845,9 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
 {
     if (page == PAGE_STATUS_MENU)
     {
-        // play button
-        if (event->button.x >= 110 && event->button.x <= 198 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        // 110 * scale, HEIGHT - 175 * scale, 88 * scale, 23 * scale
+        //  play button
+        if (event->button.x >= 110 * scale && event->button.x <= 198 * scale && event->button.y >= HEIGHT - 175 * scale && event->button.y <= HEIGHT + (-175 + 23) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1857,7 +1861,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[0] = 0;
 
         // manual button
-        if (event->button.x >= (WIDTH / 2) - 70 && event->button.x <= (WIDTH / 2) - 70 + 121 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        if (event->button.x >= (WIDTH / 2) - 70 * scale - 10 && event->button.x <= (WIDTH / 2) + (-70 + 121) * scale && event->button.y >= HEIGHT - 175 * scale && event->button.y <= HEIGHT + (-175 + 23) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
                 page = PAGE_STATUS_MANUAL;
@@ -1868,7 +1872,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[1] = 0;
 
         // options button
-        if (event->button.x >= WIDTH - 110 - 142 && event->button.x <= WIDTH - 110 && event->button.y >= HEIGHT - 175 && event->button.y <= HEIGHT - 175 + 19)
+        if (event->button.x >= WIDTH - (110 + 142) * scale && event->button.x <= WIDTH - 110 * scale && event->button.y >= HEIGHT - 175 * scale && event->button.y <= HEIGHT + (-175 + 23) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
                 page = PAGE_STATUS_OPTIONS;
@@ -1882,7 +1886,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
     if (page == PAGE_STATUS_MANUAL)
     {
         //  menu button
-        if (event->button.x >= WIDTH - 25 - 107 && event->button.x <= WIDTH - 25 && event->button.y >= HEIGHT - 45 && event->button.y <= HEIGHT - 45 + 25)
+        if (event->button.x >= WIDTH - (25 + 107) * scale && event->button.x <= WIDTH - 25 * scale && event->button.y >= HEIGHT - 45 * scale && event->button.y <= HEIGHT + (-45 + 25) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
                 page = PAGE_STATUS_MENU;
@@ -1896,7 +1900,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
     if (page == PAGE_STATUS_OPTIONS)
     {
         //  menu button
-        if (event->button.x >= WIDTH - 25 - 107 && event->button.x <= WIDTH - 25 && event->button.y >= HEIGHT - 45 && event->button.y <= HEIGHT - 45 + 25)
+        if (event->button.x >= WIDTH - (25 + 107) * scale && event->button.x <= WIDTH - 25 * scale && event->button.y >= HEIGHT - 45 * scale && event->button.y <= HEIGHT + (-45 + 25) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
                 page = PAGE_STATUS_MENU;
@@ -1907,7 +1911,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[5] = 0;
 
         // reset
-        if (event->button.x >= (WIDTH - 230) / 2 && event->button.x <= (WIDTH - 230) / 2 + 230 && event->button.y >= HEIGHT - 120 && event->button.y <= HEIGHT - 120 + 27)
+        if (event->button.x >= (WIDTH - 230 * scale) / 2 && event->button.x <= (WIDTH - 230 * scale) / 2 + 230 * scale && event->button.y >= HEIGHT - 120 * scale && event->button.y <= HEIGHT + (-120 + 27) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1924,7 +1928,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[6] = 0;
 
         //  diff1 button
-        if (event->button.x >= 150 && event->button.x <= 150 + 85 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        if (event->button.x >= 150 * scale && event->button.x <= (150 + 85) * scale && event->button.y >= (HEIGHT / 2) - 20 * scale && event->button.y <= (HEIGHT / 2) + (-20 + 85) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1938,7 +1942,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[7] = 0;
 
         //  diff2 button
-        if (event->button.x >= (WIDTH - 85) / 2 && event->button.x <= (WIDTH - 85) / 2 + 85 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        if (event->button.x >= (WIDTH - 85 * scale) / 2 && event->button.x <= (WIDTH - 85 * scale) / 2 + 85 * scale && event->button.y >= (HEIGHT / 2) - 20 * scale && event->button.y <= (HEIGHT / 2) + (-20 + 85) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1952,7 +1956,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[8] = 0;
 
         //  diff3 button
-        if (event->button.x >= WIDTH - 85 - 150 && event->button.x <= WIDTH - 150 && event->button.y >= (HEIGHT / 2) - 20 && event->button.y <= (HEIGHT / 2) - 20 + 85)
+        if (event->button.x >= WIDTH - (85 + 150) * scale && event->button.x <= WIDTH - 150 * scale && event->button.y >= (HEIGHT / 2) - 20 * scale && event->button.y <= (HEIGHT / 2) + (-20 + 85) * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1969,7 +1973,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
     if (page == PAGE_STATUS_OVER)
     {
         // replay button
-        if (event->button.x >= 220 && event->button.x <= 335 && event->button.y >= HEIGHT - 95 && event->button.y <= HEIGHT - 75)
+        if (event->button.x >= 70 && event->button.x <= 70 + 100 * scale && event->button.y >= HEIGHT - 100 && event->button.y <= HEIGHT - 100 + 20 * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
@@ -1983,7 +1987,7 @@ void navigator(GameObjects *object, GameTextures *texture, SDL_Event *event, FIL
             texture->hover[3] = 0;
 
         // menu button
-        if (event->button.x >= WIDTH - 220 - 90 && event->button.x <= WIDTH - 220 && event->button.y >= HEIGHT - 95 && event->button.y <= HEIGHT - 75)
+        if (event->button.x >= WIDTH - 250 && event->button.x <= WIDTH - 250 + 94 * scale && event->button.y >= HEIGHT - 100 && event->button.y <= HEIGHT - 100 + 20 * scale)
         {
             if (event->type == SDL_MOUSEBUTTONDOWN)
             {
